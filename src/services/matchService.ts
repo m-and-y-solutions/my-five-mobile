@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_URL } from '../config/config';
+import config from 'config/config';
 
 export interface Match {
   id: string;
@@ -83,7 +83,7 @@ export interface UpdatePlayerStatsData {
 
 const matchService = {
   async getMatches(token: string, filters?: { status?: string; type?: string; visibility?: string }) {
-    const response = await axios.get(`${API_URL}/matches`, {
+    const response = await axios.get(`${config.apiUrl}/matches`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -93,7 +93,7 @@ const matchService = {
   },
 
   async getMatchById(id: string, token: string) {
-    const response = await axios.get(`${API_URL}/matches/${id}`, {
+    const response = await axios.get(`${config.apiUrl}/matches/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -102,16 +102,18 @@ const matchService = {
   },
 
   async getUserMatches(userId: string, token: string) {
-    const response = await axios.get(`${API_URL}/matches/user/${userId}`, {
+    const response = await axios.get(`${config.apiUrl}/matches`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      params: {userId},
+
     });
     return response.data;
   },
 
   async createMatch(data: CreateMatchData, token: string) {
-    const response = await axios.post(`${API_URL}/matches`, data, {
+    const response = await axios.post(`${config.apiUrl}/matches`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -120,7 +122,7 @@ const matchService = {
   },
 
   async updateMatch(id: string, data: UpdateMatchData, token: string) {
-    const response = await axios.patch(`${API_URL}/matches/${id}`, data, {
+    const response = await axios.patch(`${config.apiUrl}/matches/${id}`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -130,7 +132,7 @@ const matchService = {
 
   async joinMatch(id: string, token: string) {
     const response = await axios.post(
-      `${API_URL}/matches/${id}/join`,
+      `${config.apiUrl}/matches/${id}/join`,
       {},
       {
         headers: {
@@ -143,7 +145,7 @@ const matchService = {
 
   async leaveMatch(id: string, token: string) {
     const response = await axios.post(
-      `${API_URL}/matches/${id}/leave`,
+      `${config.apiUrl}/matches/${id}/leave`,
       {},
       {
         headers: {
@@ -155,7 +157,7 @@ const matchService = {
   },
 
   async updateScore(id: string, data: UpdateScoreData, token: string) {
-    const response = await axios.patch(`${API_URL}/matches/${id}/score`, data, {
+    const response = await axios.patch(`${config.apiUrl}/matches/${id}/score`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -164,7 +166,7 @@ const matchService = {
   },
 
   async updatePlayerStats(id: string, data: UpdatePlayerStatsData, token: string) {
-    const response = await axios.patch(`${API_URL}/matches/${id}/stats`, data, {
+    const response = await axios.patch(`${config.apiUrl}/matches/${id}/stats`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

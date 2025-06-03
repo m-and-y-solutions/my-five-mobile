@@ -12,8 +12,6 @@ import { AppDispatch } from '../../store';
 import { RootState } from '../../store';
 import config from '../../config/config';
 import axios from 'axios';
-import { API_URL } from '../../config/config';
-import { MOCK_USERS } from '../../constants/mockdata.constantes';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList, 'ProfileMain'>;
 
@@ -91,10 +89,10 @@ const ProfileScreen = () => {
       // Try to fetch fresh data from backend
       try {
         const [statsResponse, socialResponse] = await Promise.all([
-          axios.get(`${API_URL}/users/stats`, {
+          axios.get(`${config.apiUrl}/users/stats`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${API_URL}/users/social`, {
+          axios.get(`${config.apiUrl}/users/social`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

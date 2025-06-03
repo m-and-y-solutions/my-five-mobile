@@ -7,9 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
 import { Match } from '../../services/matchService';
 import axios from 'axios';
-import { API_URL } from '../../config/config';
 import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
 import MatchCard from '../../components/MatchCard';
+import config from 'config/config';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -50,7 +50,7 @@ const HomeScreen = () => {
       // Try to fetch fresh data from backend
       try {
         console.log('Fetching fresh matches data...');
-        const response = await axios.get(`${API_URL}/matches`, {
+        const response = await axios.get(`${config.apiUrl}/matches`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -60,7 +60,7 @@ const HomeScreen = () => {
           timeout: 10000,
         });
 
-        console.log('Matches fetched successfully:', response.data);
+        console.log('Matches fetched successfully:', response.data.length);
         setUpcomingMatches(response.data);
 
         // Update localStorage with fresh data

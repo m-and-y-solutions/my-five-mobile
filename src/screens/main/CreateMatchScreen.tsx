@@ -8,7 +8,7 @@ import { RootStackParamList } from '../../types/navigation.types';
 import { CITIES } from 'constants/countries.constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { API_URL } from '../../config/config';
+import config from 'config/config';
 
 interface Field {
   id: string;
@@ -52,7 +52,7 @@ const CreateMatchScreen = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await axios.get(`${API_URL}/fields`, {
+      const response = await axios.get(`${config.apiUrl}/fields`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

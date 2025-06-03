@@ -3,8 +3,6 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, List, Switch, Button, useTheme, Avatar, Divider } from 'react-native-paper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { User } from '../../types/user.types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SettingsScreen = () => {
   const [settings, setSettings] = useState({

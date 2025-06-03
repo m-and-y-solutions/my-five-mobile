@@ -5,7 +5,6 @@ const config = {
 
 export default config;
 
-export const API_URL = 'http://localhost:3000/api';
 
 export const MATCH_TYPES = {
   FRIENDLY: 'friendly',

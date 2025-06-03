@@ -6,10 +6,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
 import { Match } from '../../services/matchService';
-import axios from 'axios';
-import { API_URL } from '../../config/config';
-import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
+import { fetchAllMatches, fetchUserMatches, resetMatches } from '../../store/slices/matchSlice';
 import MatchCard from '../../components/MatchCard';
+import config from 'config/config';
+import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
 
 type MatchesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 type MatchesScreenRouteProp = RouteProp<RootStackParamList, 'Matches'>;
@@ -17,74 +19,30 @@ type MatchesScreenRouteProp = RouteProp<RootStackParamList, 'Matches'>;
 const MatchesScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [usingMockData, setUsingMockData] = useState(false);
   const theme = useTheme();
   const navigation = useNavigation<MatchesScreenNavigationProp>();
   const route = useRoute<MatchesScreenRouteProp>();
+  
+  const dispatch = useDispatch<AppDispatch>();
+  const { matches, loading, error } = useSelector((state: RootState) => state.match);
 
   useEffect(() => {
     fetchMatches();
+    return ()=> {
+    dispatch(resetMatches());
+    };
   }, [activeTab]);
 
   const fetchMatches = async () => {
     try {
-      console.log('Fetching matches...');
-      setLoading(true);
-      setError('');
-      setUsingMockData(false);
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('No token found');
-        setError('Please login to view matches');
-        return;
-      }
-
-      // Try to get matches from localStorage first
-      const storedMatches = await AsyncStorage.getItem('matches');
-      if (storedMatches) {
-        console.log('Using stored matches data');
-        setMatches(JSON.parse(storedMatches));
-      }
-
-      // Try to fetch fresh data from backend
-      try {
-        console.log('Fetching fresh matches data...');
-        const response = await axios.get(`${API_URL}/matches`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            status: activeTab,
-            isUserMatches: route.params?.isUserMatches,
-          },
-          timeout: 10000,
-        });
-
-        console.log('Matches fetched successfully:', response.data);
-        setMatches(response.data);
-
-        // Update localStorage with fresh data
-        await AsyncStorage.setItem('matches', JSON.stringify(response.data));
-      } catch (err: any) {
-        console.error('Error fetching fresh matches:', err);
-        if (!storedMatches) {
-          // If no stored data and backend fails, use mock data
-          console.log('Using mock data instead...');
-          setUsingMockData(true);
-          const mockMatches = MOCK_MATCHES.filter(match => match.status === activeTab);
-          setMatches(mockMatches);
-        }
+      if (route.params?.isUserMatches) {
+        await dispatch(fetchUserMatches(activeTab));
+      } else {
+        await dispatch(fetchAllMatches(activeTab));
       }
     } catch (err: any) {
       console.error('Error in fetchMatches:', err);
-      setError(err.response?.data?.message || 'Failed to fetch matches');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -94,7 +52,7 @@ const MatchesScreen = () => {
     setRefreshing(false);
   };
 
-  const filteredMatches = matches.filter(match =>
+  const filteredMatches = matches.filter((match: Match) =>
     match.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     match.field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     match.field.city.toLowerCase().includes(searchQuery.toLowerCase())
@@ -131,13 +89,6 @@ const MatchesScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {usingMockData && (
-          <View style={styles.mockDataWarning}>
-            <Text style={styles.mockDataText}>
-              Using mock data - {error}
-            </Text>
-          </View>
-        )}
         <View style={styles.section}>
           <Searchbar
             placeholder="Search matches..."
@@ -171,7 +122,7 @@ const MatchesScreen = () => {
           {filteredMatches.length === 0 ? (
             <Text style={styles.emptyText}>No matches found</Text>
           ) : (
-            filteredMatches.map((match) => (
+            filteredMatches.map((match: Match) => (
               <MatchCard
                 key={match.id}
                 match={match}

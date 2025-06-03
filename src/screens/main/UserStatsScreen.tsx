@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, List, useTheme, Avatar, Surface, ActivityIndicator, Button } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { API_URL } from '../../config/config';
+import config from 'config/config';
 
 interface UserStats {
   totalMatches: number;
@@ -65,7 +65,7 @@ const UserStatsScreen = () => {
       // Try to fetch fresh data from backend
       try {
         console.log('Fetching fresh stats data...');
-        const response = await axios.get(`${API_URL}/users/stats`, {
+        const response = await axios.get(`${config.apiUrl}/users/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
