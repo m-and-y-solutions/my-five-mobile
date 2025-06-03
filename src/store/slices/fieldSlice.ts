@@ -1,0 +1,124 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import config from '../../config/config';
+
+export interface Field {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  state: string;
+  isAvailable: boolean;
+  latitude: number;
+  longitude: number;
+  price: number;
+  currency: string;
+  images: string[];
+  amenities: string[];
+  openingHours: {
+    [key: string]: {
+      open: string;
+      close: string;
+    };
+  };
+  rating: number;
+  reviews: number;
+  isIndoor: boolean;
+  isOutdoor: boolean;
+  surfaceType: string;
+  size: string;
+  maxPlayers: number;
+  minPlayers: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FieldState {
+  fields: Field[];
+  currentField: Field | null;
+  loading: boolean;
+  error: string | null;
+}
+
+const initialState: FieldState = {
+  fields: [],
+  currentField: null,
+  loading: false,
+  error: null,
+};
+
+export const fetchFields = createAsyncThunk(
+  'field/fetchFields',
+  async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    
+    const response = await axios.get(`${config.serverUrl}/api/fields`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  }
+);
+
+export const fetchFieldById = createAsyncThunk(
+  'field/fetchFieldById',
+  async (fieldId: string) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    
+    const response = await axios.get(`${config.serverUrl}/api/fields/${fieldId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  }
+);
+
+const fieldSlice = createSlice({
+  name: 'field',
+  initialState,
+  reducers: {
+    resetFields: (state) => {
+      state.fields = [];
+      state.currentField = null;
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch Fields
+      .addCase(fetchFields.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchFields.fulfilled, (state, action) => {
+        state.loading = false;
+        state.fields = action.payload;
+      })
+      .addCase(fetchFields.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch fields';
+      })
+      // Fetch Field by ID
+      .addCase(fetchFieldById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchFieldById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentField = action.payload;
+      })
+      .addCase(fetchFieldById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch field';
+      });
+  },
+});
+
+export const { resetFields } = fieldSlice.actions;
+export default fieldSlice.reducer; 

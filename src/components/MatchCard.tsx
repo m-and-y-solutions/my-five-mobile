@@ -21,31 +21,55 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
     navigation.navigate('UserStats');
   };
 
-  const renderTeam = (players: any[], isTeam1: boolean) => {
+  const renderPlayerAvatar = (teamPlayer: any) => {
+    return (
+      <View style={styles.avatarContainer}>
+        <Avatar.Image
+          size={40}
+          source={
+            teamPlayer.player.profileImage
+              ? { uri: teamPlayer.player.profileImage }
+              : require('../../assets/default-avatar.png')
+          }
+        />
+        {teamPlayer.isCaptain && (
+          <View style={styles.captainBadge}>
+            <Text style={styles.captainText}>C</Text>
+          </View>
+        )}
+        {match.status === 'completed' && teamPlayer.stats && (
+          <View style={styles.statsContainer}>
+            <Text style={styles.statsText}>
+              {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderTeam = (team: Match['team1'] | Match['team2'], isTeam1: boolean) => {
+    if (!team) return null;
+    
     const maxPlayers = match.maxPlayers / 2;
-    const spots = maxPlayers - players.length;
-    const displayPlayers = [...players];
+    const spots = maxPlayers - team.players.length;
 
     return (
       <View style={styles.teamContainer}>
         <View style={styles.teamHeader}>
-          <Text style={styles.teamName}>{isTeam1 ? 'Team 1' : 'Team 2'}</Text>
-          <Text style={styles.teamSpots}>{spots} spot{spots !== 1 ? 's' : ''} left</Text>
+          <Text style={styles.teamName} numberOfLines={1}>{team.name}</Text>
         </View>
         <View style={styles.playersContainer}>
           {Array.from({ length: maxPlayers }).map((_, index) => {
-            const player = displayPlayers[index];
-            if (player) {
+            const teamPlayer = team.players[index];
+            if (teamPlayer) {
               return (
                 <TouchableOpacity
-                  key={player.id}
-                  onPress={() => handlePlayerPress(player.id)}
+                  key={teamPlayer.id}
+                  onPress={() => handlePlayerPress(teamPlayer.player.id)}
                   style={styles.playerAvatar}
                 >
-                  <Avatar.Image
-                    size={36}
-                    source={{ uri: player.profileImage }}
-                  />
+                  {renderPlayerAvatar(teamPlayer)}
                 </TouchableOpacity>
               );
             } else {
@@ -68,6 +92,7 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
             }
           })}
         </View>
+        <Text style={styles.teamSpots}>{spots} place{spots !== 1 ? 's' : ''} disponible{spots !== 1 ? 's' : ''}</Text>
       </View>
     );
   };
@@ -83,25 +108,30 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
       <Card.Content>
         <View style={styles.matchInfo}>
           <View style={styles.teamsContainer}>
-            {renderTeam(match.participants.slice(0, match.maxPlayers / 2), true)}
+            {renderTeam(match.team1, true)}
             <View style={styles.divider} />
-            {renderTeam(match.participants.slice(match.maxPlayers / 2), false)}
+            {renderTeam(match.team2, false)}
           </View>
           <View style={styles.matchDetails}>
             <Text style={styles.detailText}>Date: {new Date(match.date).toLocaleDateString()}</Text>
-            <Text style={styles.detailText}>Time: {match.time}</Text>
-            <Text style={styles.detailText}>Price: {match.price} {match.currency}</Text>
+            <Text style={styles.detailText}>Heure: {match.time}</Text>
+            <Text style={styles.detailText}>Prix: {match.price} {match.currency}</Text>
+            {match.team1 && match.team2 && (
+              <Text style={styles.scoreText}>
+                Score: {match.team1.score} - {match.team2.score}
+              </Text>
+            )}
           </View>
         </View>
       </Card.Content>
       <Card.Actions style={styles.cardActions}>
         <Button
-          mode="contained"
+          mode="outlined"
           onPress={onPress}
           style={styles.detailsButton}
           labelStyle={styles.detailsButtonLabel}
         >
-          View Details
+          Détails
         </Button>
       </Card.Actions>
     </Card>
@@ -142,7 +172,7 @@ const styles = StyleSheet.create({
   },
   teamHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     width: '100%',
@@ -152,25 +182,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    textAlign: 'center',
   },
   teamSpots: {
     fontSize: 12,
     color: '#666',
+    marginTop: 4,
   },
   playersContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     flexWrap: 'wrap',
     width: '100%',
   },
+  avatarContainer: {
+    position: 'relative',
+  },
   playerAvatar: {
-    marginRight: -8, // Pour faire chevaucher les avatars
+    marginRight: -8,
+  },
+  captainBadge: {
+    position: 'absolute',
+    left: -4,
+    top: -4,
+    backgroundColor: '#000',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  captainText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  statsContainer: {
+    position: 'absolute',
+    bottom: -16,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  statsText: {
+    color: '#fff',
+    fontSize: 10,
+    textAlign: 'center',
   },
   emptyPlayerSlot: {
     width: 36,
     height: 36,
-    marginRight: -8, // Pour faire chevaucher les slots vides
+    marginRight: -8,
   },
   joinButton: {
     width: 36,
@@ -203,17 +271,24 @@ const styles = StyleSheet.create({
     color: '#444',
     marginBottom: 4,
   },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 8,
+  },
   cardActions: {
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     paddingHorizontal: 8,
     paddingBottom: 8,
   },
   detailsButton: {
     borderRadius: 8,
-    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+    backgroundColor: '#fff',
   },
   detailsButtonLabel: {
-    color: '#fff',
+    color: '#4CAF50',
     fontWeight: '500',
   },
 });

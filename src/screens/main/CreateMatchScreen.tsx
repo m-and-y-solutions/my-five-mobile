@@ -6,17 +6,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation.types';
 import { CITIES } from 'constants/countries.constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import config from 'config/config';
-
-interface Field {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  isAvailable: boolean;
-}
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { fetchFields } from '../../store/slices/fieldSlice';
+import { Field } from '../../store/slices/fieldSlice';
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -26,6 +19,9 @@ type CreateMatchScreenNavigationProp = NativeStackNavigationProp<RootStackParamL
 
 const CreateMatchScreen = () => {
   const navigation = useNavigation<CreateMatchScreenNavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
+  const { fields, loading: fieldsLoading, error: fieldsError } = useSelector((state: RootState) => state.field);
+  
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('10');
@@ -34,49 +30,26 @@ const CreateMatchScreen = () => {
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [fieldModalVisible, setFieldModalVisible] = useState(false);
-  const [fields, setFields] = useState<FieldsByCity>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [fieldsByCity, setFieldsByCity] = useState<FieldsByCity>({});
 
   useEffect(() => {
-    fetchFields();
-  }, []);
+    dispatch(fetchFields());
+  }, [dispatch]);
 
-  const fetchFields = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get(`${config.apiUrl}/fields`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Organize fields by city
-      const fieldsByCity: FieldsByCity = {};
-      response.data.forEach((field: Field) => {
-        const cityId = CITIES.find(city => city.name === field.city)?.id;
-        if (cityId) {
-          if (!fieldsByCity[cityId]) {
-            fieldsByCity[cityId] = [];
-          }
-          fieldsByCity[cityId].push(field);
+  useEffect(() => {
+    // Organize fields by city when fields are loaded
+    const organizedFields: FieldsByCity = {};
+    fields.forEach((field: Field) => {
+      const cityId = CITIES.find(city => city.name === field.city)?.id;
+      if (cityId) {
+        if (!organizedFields[cityId]) {
+          organizedFields[cityId] = [];
         }
-      });
-
-      setFields(fieldsByCity);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+        organizedFields[cityId].push(field);
+      }
+    });
+    setFieldsByCity(organizedFields);
+  }, [fields]);
 
   const handleCreate = () => {
     console.log('Creating match:', { date, time, maxPlayers, isPublic, selectedCity, selectedField });
@@ -84,7 +57,7 @@ const CreateMatchScreen = () => {
   };
 
   const selectedCityData = CITIES.find(city => city.id === selectedCity);
-  const selectedFieldData = selectedCity ? fields[selectedCity]?.find(field => field.id === selectedField) : null;
+  const selectedFieldData = selectedCity ? fieldsByCity[selectedCity]?.find(field => field.id === selectedField) : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,7 +65,6 @@ const CreateMatchScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-      
         <View style={styles.content}>
           <View style={styles.form}>
             <View style={styles.toggleContainer}>
@@ -202,12 +174,12 @@ const CreateMatchScreen = () => {
             <View style={styles.inputContainer}>
               <TouchableOpacity 
                 onPress={() => selectedCity && setFieldModalVisible(true)}
-                disabled={!selectedCity}
+                disabled={!selectedCity || fieldsLoading}
               >
                 <TextInput
                   label="Terrain"
                   value={selectedFieldData ? `${selectedFieldData.name} - ${selectedFieldData.address}` : ''}
-                  placeholder="Sélectionner un terrain"
+                  placeholder={fieldsLoading ? "Chargement des terrains..." : "Sélectionner un terrain"}
                   style={styles.input}
                   mode="outlined"
                   left={<TextInput.Icon icon="map-marker" />}
@@ -215,7 +187,7 @@ const CreateMatchScreen = () => {
                   outlineColor="#6B4EFF"
                   activeOutlineColor="#6B4EFF"
                   editable={false}
-                  disabled={!selectedCity}
+                  disabled={!selectedCity || fieldsLoading}
                 />
               </TouchableOpacity>
               <Modal
@@ -238,8 +210,16 @@ const CreateMatchScreen = () => {
                         onPress={() => setFieldModalVisible(false)}
                       />
                     </View>
-                    {selectedCity && fields[selectedCity] ? (
-                      fields[selectedCity].map(field => (
+                    {fieldsLoading ? (
+                      <View style={styles.noFieldsContainer}>
+                        <Text style={styles.noFieldsText}>Chargement des terrains...</Text>
+                      </View>
+                    ) : fieldsError ? (
+                      <View style={styles.noFieldsContainer}>
+                        <Text style={styles.noFieldsText}>{fieldsError}</Text>
+                      </View>
+                    ) : selectedCity && fieldsByCity[selectedCity] ? (
+                      fieldsByCity[selectedCity].map(field => (
                         <List.Item
                           key={field.id}
                           title={`${field.name} - ${field.address}`}
@@ -249,18 +229,18 @@ const CreateMatchScreen = () => {
                               setFieldModalVisible(false);
                             }
                           }}
-                          disabled={!field.isAvailable}
                           style={[
                             styles.listItem,
-                            !field.isAvailable && styles.listItemDisabled
+                            !field.isAvailable && styles.disabledItem
                           ]}
                           left={props => (
                             <List.Icon 
                               {...props} 
-                              icon={field.isAvailable ? 'check-circle' : 'close-circle'} 
-                              color={field.isAvailable ? '#4CAF50' : '#F44336'}
+                              icon={field.isAvailable ? "check-circle" : "close-circle"}
+                              color={field.isAvailable ? "#4CAF50" : "#FF5252"}
                             />
                           )}
+                          description={!field.isAvailable ? "Terrain non disponible" : undefined}
                         />
                       ))
                     ) : (
@@ -286,8 +266,6 @@ const CreateMatchScreen = () => {
                 activeOutlineColor="#6B4EFF"
               />
             </View>
-
-          
 
             <Button
               mode="contained"
@@ -354,9 +332,6 @@ const styles = StyleSheet.create({
   listItem: {
     paddingVertical: 12,
   },
-  listItemDisabled: {
-    opacity: 0.7,
-  },
   toggleContainer: {
     marginVertical: 8,
   },
@@ -412,6 +387,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  disabledItem: {
+    opacity: 0.6,
   },
 });
 

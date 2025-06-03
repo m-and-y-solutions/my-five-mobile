@@ -8,7 +8,7 @@ export const fetchAllMatches = createAsyncThunk(
   async (status: string) => {
     const token = await AsyncStorage.getItem('token');
     if (!token) throw new Error('No token found');
-    return await matchService.getMatches(token, { status });
+    return await matchService.getMatches(token, { status, visibility: 'public' });
   }
 );
 

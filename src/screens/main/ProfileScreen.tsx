@@ -1,61 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
-import { Text, Button, Avatar, List, useTheme, Card, ActivityIndicator } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from '../../types/user.types';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { Text, Button, Avatar, List, useTheme, ActivityIndicator } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, MainTabParamList, ProfileStackParamList } from '../../types/navigation.types';
+import { RootStackParamList, ProfileStackParamList } from '../../types/navigation.types';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
-import { AppDispatch } from '../../store';
-import { RootState } from '../../store';
+import { fetchUserStats, fetchUserSocial } from '../../store/slices/userSlice';
+import { AppDispatch, RootState } from '../../store';
 import config from '../../config/config';
-import axios from 'axios';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList, 'ProfileMain'>;
 
-interface UserStats {
-  totalMatches: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  goalsScored: number;
-  assists: number;
-  ranking: number;
-  winRate: number;
-  averageGoalsPerMatch: number;
-  averageAssistsPerMatch: number;
-  currentStreak: number;
-  bestStreak: number;
-  favoritePosition: string;
-  totalPlayTime: number;
-  achievements: Array<{
-    id: string;
-    title: string;
-    description: string;
-    icon: string;
-    unlockedAt: string;
-  }>;
-}
-
-interface UserSocial {
-  groups: number;
-  following: number;
-  followers: number;
-}
-
 const ProfileScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const { stats, social, loading, error } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const theme = useTheme();
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [social, setSocial] = useState<UserSocial>({ groups: 0, following: 0, followers: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [usingMockData, setUsingMockData] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -65,82 +28,10 @@ const ProfileScreen = () => {
 
   const fetchUserData = async () => {
     try {
-      console.log('Fetching user data...');
-      setLoading(true);
-      setError('');
-      setUsingMockData(false);
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('No token found');
-        setError('Please login to view profile');
-        return;
-      }
-
-      // Try to get user data from localStorage first
-      const storedUserData = await AsyncStorage.getItem('userData');
-      if (storedUserData) {
-        const userData = JSON.parse(storedUserData);
-        console.log('Using stored user data:', userData);
-        setStats(userData.stats);
-        setSocial(userData.social);
-      }
-
-      // Try to fetch fresh data from backend
-      try {
-        const [statsResponse, socialResponse] = await Promise.all([
-          axios.get(`${config.apiUrl}/users/stats`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${config.apiUrl}/users/social`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        console.log('Fresh data fetched successfully');
-        setStats(statsResponse.data);
-        setSocial(socialResponse.data);
-
-        // Update localStorage with fresh data
-        await AsyncStorage.setItem('userData', JSON.stringify({
-          stats: statsResponse.data,
-          social: socialResponse.data,
-        }));
-      } catch (err: any) {
-        console.error('Error fetching fresh data:', err);
-        if (!storedUserData) {
-          // If no stored data and backend fails, use mock data
-          console.log('Using mock data instead...');
-          setUsingMockData(true);
-          setStats({
-            totalMatches: 15,
-            wins: 10,
-            losses: 3,
-            draws: 2,
-            goalsScored: 25,
-            assists: 15,
-            ranking: 0,
-            winRate: 66.67,
-            averageGoalsPerMatch: 1.67,
-            averageAssistsPerMatch: 1.0,
-            currentStreak: 3,
-            bestStreak: 5,
-            favoritePosition: 'Forward',
-            totalPlayTime: 1350,
-            achievements: [],
-          });
-          setSocial({
-            groups: 3,
-            following: 100,
-            followers: 150,
-          });
-        }
-      }
+      await dispatch(fetchUserStats());
+      await dispatch(fetchUserSocial());
     } catch (err: any) {
       console.error('Error in fetchUserData:', err);
-      setError(err.response?.data?.message || 'Failed to load profile data');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -179,7 +70,7 @@ const ProfileScreen = () => {
           onPress={fetchUserData}
           style={styles.retryButton}
         >
-          Retry
+          Réessayer
         </Button>
       </View>
     );
@@ -192,13 +83,6 @@ const ProfileScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {usingMockData && (
-        <View style={styles.mockDataWarning}>
-          <Text style={styles.mockDataText}>
-            Using mock data - {error}
-          </Text>
-        </View>
-      )}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.avatarContainer}>
@@ -217,15 +101,15 @@ const ProfileScreen = () => {
           <View style={styles.statsContainer}>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social.groups}</Text>
+                <Text variant="titleLarge" style={styles.statNumber}>{social?.groups || 0}</Text>
                 <Text variant="bodyMedium">Groupes</Text>
               </View>
               <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social.following}</Text>
+                <Text variant="titleLarge" style={styles.statNumber}>{social?.following || 0}</Text>
                 <Text variant="bodyMedium">Suivis</Text>
               </View>
               <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social.followers}</Text>
+                <Text variant="titleLarge" style={styles.statNumber}>{social?.followers || 0}</Text>
                 <Text variant="bodyMedium">Abonnés</Text>
               </View>
             </View>
@@ -375,18 +259,6 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
-  },
-  mockDataWarning: {
-    backgroundColor: '#fff3cd',
-    padding: 8,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 4,
-  },
-  mockDataText: {
-    color: '#856404',
-    textAlign: 'center',
-    fontSize: 12,
   },
 });
 

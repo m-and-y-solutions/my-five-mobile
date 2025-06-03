@@ -37,7 +37,7 @@ const MatchesScreen = () => {
   const fetchMatches = async () => {
     try {
       if (route.params?.isUserMatches) {
-        await dispatch(fetchUserMatches(activeTab));
+        await dispatch(fetchUserMatches('activeTab'));
       } else {
         await dispatch(fetchAllMatches(activeTab));
       }

@@ -27,6 +27,50 @@ export interface Match {
     address: string;
     city: string;
   };
+  team1?: {
+    id: string;
+    name: string;
+    score: number;
+    players: Array<{
+      id: string;
+      position?: string;
+      isCaptain: boolean;
+      player: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        profileImage?: string;
+      };
+      stats?: {
+        goals: number;
+        assists: number;
+        yellowCards: number;
+        redCards: number;
+      };
+    }>;
+  };
+  team2?: {
+    id: string;
+    name: string;
+    score: number;
+    players: Array<{
+      id: string;
+      position?: string;
+      isCaptain: boolean;
+      player: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        profileImage?: string;
+      };
+      stats?: {
+        goals: number;
+        assists: number;
+        yellowCards: number;
+        redCards: number;
+      };
+    }>;
+  };
   participants: Array<{
     id: string;
     firstName: string;
@@ -106,7 +150,7 @@ const matchService = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      params: {userId},
+      params: {creatorId: userId,},
 
     });
     return response.data;
