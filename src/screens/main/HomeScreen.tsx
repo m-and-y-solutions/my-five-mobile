@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Button, useTheme, ActivityIndicator, Text, FAB } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,12 +19,14 @@ const HomeScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { matches, loading, error } = useSelector((state: RootState) => state.match);
 
-  useEffect(() => {
-    fetchUpcomingMatches();
-    return () => {
-      dispatch(resetMatches());
-    };
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUpcomingMatches();
+      return () => {
+        dispatch(resetMatches());
+      };
+    }, [])
+  );
 
   const fetchUpcomingMatches = async () => {
     try {

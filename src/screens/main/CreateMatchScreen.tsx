@@ -10,10 +10,20 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchFields } from '../../store/slices/fieldSlice';
 import { Field } from '../../store/slices/fieldSlice';
-import matchService, { CreateMatchData } from '../../services/matchService';
+import matchService from '../../services/matchService';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface CreateMatchData {
+  title: string;
+  description?: string;
+  date: string;
+  location: string;
+  type: string;
+  visibility: 'public' | 'private';
+  maxPlayers?: number;
+}
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -76,20 +86,17 @@ const CreateMatchScreen = () => {
     setError('');
 
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('No token found');
-
       const matchData: CreateMatchData = {
         title: `${selectedFieldData?.name} - ${date.toLocaleDateString()}`,
+        description: `Match ${isPublic ? 'public' : 'privé'} au terrain ${selectedFieldData?.name}`,
         date: date.toISOString().split('T')[0],
-        time: date.toLocaleTimeString(),
-        fieldId: selectedField,
-        maxPlayers: parseInt(maxPlayers),
+        location: selectedFieldData?.address || '',
         type: 'friendly',
-        visibility: isPublic ? 'public' : 'private'
+        visibility: isPublic ? 'public' : 'private',
+        maxPlayers: parseInt(maxPlayers)
       };
 
-      const result = await matchService.createMatch(matchData, token);
+      const result = await matchService.createMatch(matchData);
       navigation.goBack();
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue');

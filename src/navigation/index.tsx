@@ -128,7 +128,7 @@ const MainTabs = () => {
 
 const Navigation = () => {
   const [isLoading, setIsLoading] = React.useState(true);
-  const { token, hasSeenOnboarding } = useSelector((state: RootState) => state.auth);
+  const { accessToken, hasSeenOnboarding } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<MainTabsNavigationProp>();
 
@@ -156,7 +156,7 @@ const Navigation = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {token ? (
+      {accessToken ? (
         <>
           {!hasSeenOnboarding ? (
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />

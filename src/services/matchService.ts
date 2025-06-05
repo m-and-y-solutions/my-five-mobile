@@ -1,5 +1,6 @@
-import axios from 'axios';
-import config from 'config/config';
+import api from './api';
+import config from '../config/config';
+import { CreateMatchData } from '../types/match.types';
 
 export interface Match {
   id: string;
@@ -89,18 +90,6 @@ export interface Match {
   }>;
 }
 
-export interface CreateMatchData {
-  title: string;
-  date: string;
-  time: string;
-  fieldId: string;
-  maxPlayers: number;
-  type: 'friendly' | 'competitive';
-  visibility: 'public' | 'private';
-  price?: number;
-  currency?: string;
-}
-
 export interface UpdateMatchData {
   title?: string;
   date?: string;
@@ -126,95 +115,52 @@ export interface UpdatePlayerStatsData {
 }
 
 const matchService = {
-  async getMatches(token: string, filters?: { status?: string; type?: string; visibility?: string }) {
-    const response = await axios.get(`${config.apiUrl}/matches`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  async getMatches(filters?: { status?: string; type?: string; visibility?: string }) {
+    const response = await api.get(`${config.apiUrl}/matches`, {
       params: filters,
     });
     return response.data;
   },
 
-  async getMatchById(id: string, token: string) {
-    const response = await axios.get(`${config.apiUrl}/matches/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  async getMatchById(id: string) {
+    const response = await api.get(`${config.apiUrl}/matches/${id}`);
+    return response.data;
+  },
+
+  async getUserMatches(userId: string) {
+    const response = await api.get(`${config.apiUrl}/matches`, {
+      params: { creatorId: userId },
     });
     return response.data;
   },
 
-  async getUserMatches(userId: string, token: string) {
-    const response = await axios.get(`${config.apiUrl}/matches`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      params: {creatorId: userId,},
-
-    });
+  async createMatch(data: CreateMatchData) {
+    const response = await api.post(`${config.apiUrl}/matches`, data);
     return response.data;
   },
 
-  async createMatch(data: CreateMatchData, token: string) {
-    const response = await axios.post(`${config.apiUrl}/matches`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  async updateMatch(id: string, data: UpdateMatchData) {
+    const response = await api.patch(`${config.apiUrl}/matches/${id}`, data);
     return response.data;
   },
 
-  async updateMatch(id: string, data: UpdateMatchData, token: string) {
-    const response = await axios.patch(`${config.apiUrl}/matches/${id}`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  async joinMatch(id: string) {
+    const response = await api.post(`${config.apiUrl}/matches/${id}/join`);
     return response.data;
   },
 
-  async joinMatch(id: string, token: string) {
-    const response = await axios.post(
-      `${config.apiUrl}/matches/${id}/join`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  async leaveMatch(id: string) {
+    const response = await api.post(`${config.apiUrl}/matches/${id}/leave`);
     return response.data;
   },
 
-  async leaveMatch(id: string, token: string) {
-    const response = await axios.post(
-      `${config.apiUrl}/matches/${id}/leave`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  async updateScore(id: string, data: UpdateScoreData) {
+    const response = await api.patch(`${config.apiUrl}/matches/${id}/score`, data);
     return response.data;
   },
 
-  async updateScore(id: string, data: UpdateScoreData, token: string) {
-    const response = await axios.patch(`${config.apiUrl}/matches/${id}/score`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  },
-
-  async updatePlayerStats(id: string, data: UpdatePlayerStatsData, token: string) {
-    const response = await axios.patch(`${config.apiUrl}/matches/${id}/stats`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  async updatePlayerStats(id: string, data: UpdatePlayerStatsData) {
+    const response = await api.patch(`${config.apiUrl}/matches/${id}/stats`, data);
     return response.data;
   },
 };

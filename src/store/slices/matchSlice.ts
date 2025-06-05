@@ -6,48 +6,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const fetchAllMatches = createAsyncThunk(
   'match/fetchAllMatches',
   async (status: string) => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-    return await matchService.getMatches(token, { status, visibility: 'public' });
+    return await matchService.getMatches({ status, visibility: 'public' });
   }
 );
 
 export const fetchUserMatches = createAsyncThunk(
   'match/fetchUserMatches',
   async (status: string) => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No token found');
     const userStr = await AsyncStorage.getItem('user');
     if (!userStr) throw new Error('No user found');
     const user = JSON.parse(userStr);
-    return await matchService.getUserMatches(user.id, token);
+    return await matchService.getUserMatches(user.id);
   }
 );
 
 export const fetchMatchById = createAsyncThunk(
   'match/fetchMatchById',
   async (matchId: string) => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-    return await matchService.getMatchById(matchId, token);
+    return await matchService.getMatchById(matchId);
   }
 );
 
 export const joinMatch = createAsyncThunk(
   'match/joinMatch',
   async (matchId: string) => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-    return await matchService.joinMatch(matchId, token);
+    return await matchService.joinMatch(matchId);
   }
 );
 
 export const leaveMatch = createAsyncThunk(
   'match/leaveMatch',
   async (matchId: string) => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-    return await matchService.leaveMatch(matchId, token);
+    return await matchService.leaveMatch(matchId);
   }
 );
 
