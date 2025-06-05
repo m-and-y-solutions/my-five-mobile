@@ -1,0 +1,69 @@
+export interface Match {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  fieldId: string;
+  maxPlayers: number;
+  type: 'friendly' | 'competitive';
+  visibility: 'public' | 'private';
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  price?: number;
+  currency?: string;
+  team1Score?: number;
+  team2Score?: number;
+  creator: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string;
+  };
+  field: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+  };
+  participants: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    profileImage?: string;
+  }>;
+}
+
+export interface CreateMatchData {
+  title: string;
+  description?: string;
+  date: string;
+  location: string;
+  type: string;
+  visibility: 'public' | 'private';
+  maxPlayers?: number;
+}
+
+export interface UpdateMatchData {
+  title?: string;
+  description?: string;
+  date?: string;
+  location?: string;
+  status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  type?: string;
+  visibility?: 'public' | 'private';
+  maxPlayers?: number;
+}
+
+export interface UpdateScoreData {
+  team1: number;
+  team2: number;
+}
+
+export interface UpdatePlayerStatsData {
+  playerId: string;
+  stats: {
+    goals?: number;
+    assists?: number;
+    yellowCards?: number;
+    redCards?: number;
+  };
+} 
