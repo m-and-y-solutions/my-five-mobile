@@ -183,7 +183,7 @@ const ProfileScreen = () => {
           mode="contained"
           onPress={handleLogout}
           style={styles.logoutButton}
-          buttonColor="#4CAF50"
+          buttonColor="red"
         >
           Déconnexion
         </Button>
