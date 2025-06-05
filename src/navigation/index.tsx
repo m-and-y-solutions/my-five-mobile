@@ -82,6 +82,14 @@ const MainTabs = () => {
             onPress={() => navigation.navigate('Settings')}
           />
         ),
+        tabBarActiveTintColor: '#4CAF50',
+        tabBarInactiveTintColor: '#666',
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: '#e0e0e0',
+          paddingBottom: 5,
+          paddingTop: 5,
+        },
       }}
     >
       <Tab.Screen

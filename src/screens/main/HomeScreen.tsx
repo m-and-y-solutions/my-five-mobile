@@ -4,7 +4,6 @@ import { Button, useTheme, ActivityIndicator, Text, FAB } from 'react-native-pap
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
-import { Match } from '../../services/matchService';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchAllMatches, resetMatches } from '../../store/slices/matchSlice';
@@ -45,7 +44,7 @@ const HomeScreen = () => {
     if (loading && !refreshing) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color="#4CAF50" />
         </View>
       );
     }
@@ -58,6 +57,7 @@ const HomeScreen = () => {
             mode="contained"
             onPress={fetchUpcomingMatches}
             style={styles.retryButton}
+            buttonColor="#4CAF50"
           >
             Réessayer
           </Button>
@@ -97,7 +97,7 @@ const HomeScreen = () => {
       {renderContent()}
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: '#4CAF50' }]}
         onPress={() => navigation.navigate('CreateMatch')}
         color="#fff"
       />
@@ -118,6 +118,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 16,
+    color: '#4CAF50',
   },
   emptyText: {
     textAlign: 'center',
@@ -135,14 +136,14 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
-    backgroundColor: '#4CAF50',
+    borderRadius: 8,
   },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#4CAF50',
+    borderRadius: 8,
   },
 });
 

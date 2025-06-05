@@ -45,7 +45,7 @@ const SettingsScreen = () => {
           size={80}
           source={user?.profileImage ? { uri: user.profileImage } : require('../../../assets/default-avatar.png')}
         />
-        <Text variant="headlineSmall" style={styles.userName}>
+        <Text variant="headlineSmall" style={[styles.userName, { color: '#4CAF50' }]}>
           {user?.firstName} {user?.lastName}
         </Text>
         <Text variant="bodyMedium" style={styles.userEmail}>
@@ -56,7 +56,7 @@ const SettingsScreen = () => {
       <Divider />
 
       <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Paramètres de confidentialité
         </Text>
         <List.Item
@@ -66,6 +66,7 @@ const SettingsScreen = () => {
             <Switch
               value={settings.profileVisibility}
               onValueChange={() => toggleSetting('profileVisibility')}
+              color="#4CAF50"
             />
           )}
         />
@@ -77,6 +78,7 @@ const SettingsScreen = () => {
             <Switch
               value={settings.shareActivity}
               onValueChange={() => toggleSetting('shareActivity')}
+              color="#4CAF50"
             />
           )}
         />
@@ -88,13 +90,14 @@ const SettingsScreen = () => {
             <Switch
               value={settings.shareLocation}
               onValueChange={() => toggleSetting('shareLocation')}
+              color="#4CAF50"
             />
           )}
         />
       </View>
 
       <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Notifications
         </Text>
         <List.Item
@@ -104,6 +107,7 @@ const SettingsScreen = () => {
             <Switch
               value={settings.notifications.likes}
               onValueChange={() => toggleNotification('likes')}
+              color="#4CAF50"
             />
           )}
         />
@@ -115,6 +119,7 @@ const SettingsScreen = () => {
             <Switch
               value={settings.notifications.comments}
               onValueChange={() => toggleNotification('comments')}
+              color="#4CAF50"
             />
           )}
         />
@@ -126,6 +131,7 @@ const SettingsScreen = () => {
             <Switch
               value={settings.notifications.tags}
               onValueChange={() => toggleNotification('tags')}
+              color="#4CAF50"
             />
           )}
         />
@@ -137,31 +143,32 @@ const SettingsScreen = () => {
             <Switch
               value={settings.notifications.connections}
               onValueChange={() => toggleNotification('connections')}
+              color="#4CAF50"
             />
           )}
         />
       </View>
 
       <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Compte
         </Text>
         <List.Item
           title="Utilisateurs bloqués"
           description="Gérer les connexions bloquées"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
         />
 
         <List.Item
           title="Aide et support"
           description="Obtenir de l'aide avec l'application"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
         />
 
         <List.Item
           title="Mentions légales"
           description="Conditions d'utilisation et politique de confidentialité"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
         />
       </View>
 
@@ -169,7 +176,7 @@ const SettingsScreen = () => {
         <Button
           mode="outlined"
           textColor="red"
-          style={styles.deleteButton}
+          style={[styles.deleteButton, { borderColor: 'red' }]}
           onPress={() => {
             // Handle account deletion
           }}
@@ -205,6 +212,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 10,
+    color: '#4CAF50',
   },
   deleteButton: {
     borderColor: 'red',

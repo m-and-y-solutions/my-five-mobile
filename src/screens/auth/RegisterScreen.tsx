@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, TextInput, ScrollView } from 'react-native';
-import { Button, Text, useTheme, HelperText } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Button, Text, useTheme, HelperText, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootStackParamList } from '../../types/navigation.types';
 import ImagePicker from '../../components/ImagePicker';
 import { register } from '../../store/slices/authSlice';
-import { AppDispatch } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { validatePassword } from '../../utils/auth';
@@ -34,16 +34,18 @@ const RegisterScreen = () => {
   const [telephone, setTelephone] = useState('');
   const [profileImage, setprofileImage] = useState<File | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigation = useNavigation<RegisterScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
+  const { loading: authLoading, error: authError } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
 
- 
-
   const handleImageSelected = (data: FormData) => {
-    setprofileImage(data.get('image') as File);
+    const image = data.getAll('image')[0] as unknown as File;
+    setprofileImage(image);
   };
 
   const handleRegister = async () => {
@@ -80,11 +82,9 @@ const RegisterScreen = () => {
         address,
         telephone,
         profileImage,
-
       })).unwrap();
 
       if (result.success) {
-        
         // navigation.navigate('Login');
       } else {
         setError(result.message || 'Une erreur est survenue');
@@ -104,7 +104,10 @@ const RegisterScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.contentContainer}>
           <View style={styles.logoContainer}>
@@ -193,11 +196,19 @@ const RegisterScreen = () => {
             />
 
             <TextInput
-              placeholder="Mot de passe"
+              label="Mot de passe"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
               style={styles.input}
+              mode="outlined"
+              activeOutlineColor="#4CAF50"
             />
 
             <HelperText type="info" visible={true}>
@@ -205,11 +216,19 @@ const RegisterScreen = () => {
             </HelperText>
 
             <TextInput
-              placeholder="Confirmer le mot de passe"
+              label="Confirmer le mot de passe"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
+              right={
+                <TextInput.Icon
+                  icon={showConfirmPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                />
+              }
               style={styles.input}
+              mode="outlined"
+              activeOutlineColor="#4CAF50"
             />
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -220,6 +239,7 @@ const RegisterScreen = () => {
               style={styles.button}
               loading={loading}
               disabled={loading}
+              buttonColor="#4CAF50"
             >
               S'inscrire
             </Button>
@@ -228,13 +248,14 @@ const RegisterScreen = () => {
               mode="text"
               onPress={() => navigation.navigate('Login')}
               style={styles.linkButton}
+              textColor="#4CAF50"
             >
               Déjà un compte ? Se connecter
             </Button>
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 

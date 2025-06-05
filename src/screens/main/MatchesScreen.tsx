@@ -62,7 +62,7 @@ const MatchesScreen = () => {
     if (loading && !refreshing) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color="#4CAF50" />
         </View>
       );
     }
@@ -91,36 +91,54 @@ const MatchesScreen = () => {
       >
         <View style={styles.section}>
           <Searchbar
-            placeholder="Search matches..."
+            placeholder="Rechercher des matchs..."
             onChangeText={setSearchQuery}
             value={searchQuery}
             style={styles.searchBar}
+            iconColor="#4CAF50"
+            inputStyle={styles.searchInput}
+            mode="bar"
           />
           <View style={styles.tabs}>
             <Button
               mode={activeTab === 'upcoming' ? 'contained' : 'outlined'}
               onPress={() => setActiveTab('upcoming')}
-              style={styles.tabButton}
+              style={[
+                styles.tabButton,
+                activeTab === 'upcoming' ? styles.tabButtonActive : styles.tabButtonInactive
+              ]}
+              buttonColor="#4CAF50"
+              textColor={activeTab === 'upcoming' ? '#fff' : '#4CAF50'}
             >
-              Upcoming
+              À venir
             </Button>
             <Button
               mode={activeTab === 'ongoing' ? 'contained' : 'outlined'}
               onPress={() => setActiveTab('ongoing')}
-              style={styles.tabButton}
+              style={[
+                styles.tabButton,
+                activeTab === 'ongoing' ? styles.tabButtonActive : styles.tabButtonInactive
+              ]}
+              buttonColor="#4CAF50"
+              textColor={activeTab === 'ongoing' ? '#fff' : '#4CAF50'}
             >
-              Ongoing
+              En cours
             </Button>
             <Button
               mode={activeTab === 'completed' ? 'contained' : 'outlined'}
               onPress={() => setActiveTab('completed')}
-              style={styles.tabButton}
+              style={[
+                styles.tabButton,
+                activeTab === 'completed' ? styles.tabButtonActive : styles.tabButtonInactive
+              ]}
+              buttonColor="#4CAF50"
+              textColor={activeTab === 'completed' ? '#fff' : '#4CAF50'}
             >
-              Completed
+              Terminés
             </Button>
           </View>
           {filteredMatches.length === 0 ? (
-            <Text style={styles.emptyText}>No matches found</Text>
+            <Text style={styles.emptyText}>Aucun match trouvé</Text>
           ) : (
             filteredMatches.map((match: Match) => (
               <MatchCard
@@ -155,6 +173,14 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  searchInput: {
+    color: '#333',
   },
   tabs: {
     flexDirection: 'row',
@@ -163,6 +189,15 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  tabButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  tabButtonInactive: {
+    backgroundColor: '#fff',
   },
   emptyText: {
     textAlign: 'center',
@@ -180,6 +215,8 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
   },
   mockDataWarning: {
     backgroundColor: '#fff3cd',

@@ -24,11 +24,39 @@ export const fetchUserMatches = createAsyncThunk(
   }
 );
 
+export const fetchMatchById = createAsyncThunk(
+  'match/fetchMatchById',
+  async (matchId: string) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    return await matchService.getMatchById(matchId, token);
+  }
+);
+
+export const joinMatch = createAsyncThunk(
+  'match/joinMatch',
+  async (matchId: string) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    return await matchService.joinMatch(matchId, token);
+  }
+);
+
+export const leaveMatch = createAsyncThunk(
+  'match/leaveMatch',
+  async (matchId: string) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    return await matchService.leaveMatch(matchId, token);
+  }
+);
+
 interface MatchState {
   matches: Match[];
   allMatches: Match[];
   userMatches: Match[];
   currentMatch: Match | null;
+  selectedMatch: Match | null;
   loading: boolean;
   error: string | null;
 }
@@ -38,6 +66,7 @@ const initialState: MatchState = {
   allMatches: [],
   userMatches: [],
   currentMatch: null,
+  selectedMatch: null,
   loading: false,
   error: null,
 };
@@ -51,6 +80,7 @@ const matchSlice = createSlice({
       state.allMatches = [];
       state.userMatches = [];
       state.currentMatch = null;
+      state.selectedMatch = null;
       state.error = null;
     },
     setMatches: (state, action: PayloadAction<Match[]>) => {
@@ -109,6 +139,46 @@ const matchSlice = createSlice({
       .addCase(fetchUserMatches.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch user matches';
+      })
+      .addCase(fetchMatchById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMatchById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedMatch = action.payload;
+      })
+      .addCase(fetchMatchById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch match';
+      })
+      .addCase(joinMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(joinMatch.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.selectedMatch) {
+          state.selectedMatch = action.payload;
+        }
+      })
+      .addCase(joinMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to join match';
+      })
+      .addCase(leaveMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(leaveMatch.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.selectedMatch) {
+          state.selectedMatch = action.payload;
+        }
+      })
+      .addCase(leaveMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to leave match';
       });
   },
 });

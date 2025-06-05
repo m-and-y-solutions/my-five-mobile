@@ -134,7 +134,7 @@ const UserStatsScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
@@ -169,79 +169,79 @@ const UserStatsScreen = () => {
         </View>
       )}
       <Surface style={styles.statsCard}>
-        <Text variant="headlineSmall" style={styles.sectionTitle}>
+        <Text variant="headlineSmall" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Overall Statistics
         </Text>
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.totalMatches || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.totalMatches || 0}</Text>
             <Text variant="bodySmall">Total Matches</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.wins || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.wins || 0}</Text>
             <Text variant="bodySmall">Wins</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.losses || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.losses || 0}</Text>
             <Text variant="bodySmall">Losses</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.draws || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.draws || 0}</Text>
             <Text variant="bodySmall">Draws</Text>
           </View>
         </View>
       </Surface>
 
       <Surface style={styles.statsCard}>
-        <Text variant="headlineSmall" style={styles.sectionTitle}>
+        <Text variant="headlineSmall" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Performance
         </Text>
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.goalsScored || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.goalsScored || 0}</Text>
             <Text variant="bodySmall">Goals</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.assists || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.assists || 0}</Text>
             <Text variant="bodySmall">Assists</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.winRate?.toFixed(1) || 0}%</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.winRate?.toFixed(1) || 0}%</Text>
             <Text variant="bodySmall">Win Rate</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.ranking || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.ranking || 0}</Text>
             <Text variant="bodySmall">Ranking</Text>
           </View>
         </View>
       </Surface>
 
       <Surface style={styles.statsCard}>
-        <Text variant="headlineSmall" style={styles.sectionTitle}>
+        <Text variant="headlineSmall" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Averages
         </Text>
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.averageGoalsPerMatch?.toFixed(1) || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.averageGoalsPerMatch?.toFixed(1) || 0}</Text>
             <Text variant="bodySmall">Goals/Match</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.averageAssistsPerMatch?.toFixed(1) || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.averageAssistsPerMatch?.toFixed(1) || 0}</Text>
             <Text variant="bodySmall">Assists/Match</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.currentStreak || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.currentStreak || 0}</Text>
             <Text variant="bodySmall">Current Streak</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleMedium">{stats?.bestStreak || 0}</Text>
+            <Text variant="titleMedium" style={{ color: '#4CAF50' }}>{stats?.bestStreak || 0}</Text>
             <Text variant="bodySmall">Best Streak</Text>
           </View>
         </View>
       </Surface>
 
       <Surface style={styles.statsCard}>
-        <Text variant="headlineSmall" style={styles.sectionTitle}>
+        <Text variant="headlineSmall" style={[styles.sectionTitle, { color: '#4CAF50' }]}>
           Achievements
         </Text>
         {stats?.achievements.map((achievement) => (
@@ -249,7 +249,7 @@ const UserStatsScreen = () => {
             key={achievement.id}
             title={achievement.title}
             description={achievement.description}
-            left={props => <List.Icon {...props} icon={achievement.icon} />}
+            left={props => <List.Icon {...props} icon={achievement.icon} color="#4CAF50" />}
           />
         ))}
       </Surface>
@@ -291,6 +291,8 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
   },
   mockDataWarning: {
     backgroundColor: '#fff3cd',

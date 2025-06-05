@@ -56,7 +56,7 @@ const ProfileScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
@@ -69,6 +69,7 @@ const ProfileScreen = () => {
           mode="contained"
           onPress={fetchUserData}
           style={styles.retryButton}
+          buttonColor="#4CAF50"
         >
           Réessayer
         </Button>
@@ -138,18 +139,18 @@ const ProfileScreen = () => {
         <List.Item
           title="Email"
           description={user.email}
-          left={props => <List.Icon {...props} icon="email" />}
+          left={props => <List.Icon {...props} icon="email" color="#4CAF50" />}
         />
         <List.Item
           title="Modifier le profil"
           description="Mettre à jour vos informations personnelles"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
         />
 
         <List.Item
           title="Préférences"
           description="Définir vos préférences de match"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
         />
       </View>
 
@@ -160,27 +161,28 @@ const ProfileScreen = () => {
         <List.Item
           title="Mes matchs"
           description="Voir mes matchs à venir et passés"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
           onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
         />
         <List.Item
           title="Statistiques"
           description="Voir mes statistiques et réalisations"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
           onPress={() => navigation.navigate('UserStats')}
         />
         <List.Item
           title="Groupes"
           description="Gérer vos groupes"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
+          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
         />
       </View>
 
       <View style={styles.section}>
         <Button
-          mode="outlined"
+          mode="contained"
           onPress={handleLogout}
           style={styles.logoutButton}
+          buttonColor="#4CAF50"
         >
           Déconnexion
         </Button>
@@ -231,12 +233,13 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontWeight: 'bold',
-    color: '#6B4EFF',
+    color: '#4CAF50',
   },
   name: {
     fontWeight: 'bold',
     marginTop: 8,
     textAlign: 'center',
+    color: '#4CAF50',
   },
   section: {
     marginTop: 20,
@@ -248,10 +251,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 15,
-    color: '#333',
+    color: '#4CAF50',
   },
   logoutButton: {
-    borderColor: '#ff4444',
+    marginTop: 10,
+    borderRadius: 8,
   },
   errorText: {
     color: 'red',
@@ -259,6 +263,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
+    borderRadius: 8,
   },
 });
 
