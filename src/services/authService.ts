@@ -6,8 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const authService = {
   async login(credentials: LoginCredentials) {
     try {
+      console.log('🔑 Starting login process...');
       const response = await axios.post(`${config.apiUrl}/auth/login`, credentials);
-      console.log('Login response:', response.data);
+      console.log('✅ Login response received:', response.data);
       
       if (!response.data?.data?.accessToken || !response.data?.data?.refreshToken) {
         throw new Error('Tokens manquants dans la réponse');
@@ -16,13 +17,21 @@ const authService = {
       // Stocker les tokens
       await AsyncStorage.setItem('accessToken', response.data.data.accessToken);
       await AsyncStorage.setItem('refreshToken', response.data.data.refreshToken);
+      
+      // Vérifier que les tokens sont bien stockés
+      const storedAccessToken = await AsyncStorage.getItem('accessToken');
+      const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
+      console.log('💾 Stored tokens after login:', {
+        accessToken: storedAccessToken ? 'Stored' : 'Missing',
+        refreshToken: storedRefreshToken ? 'Stored' : 'Missing'
+      });
 
       return {
         success: true,
         data: response.data.data,
       };
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Une erreur est survenue',
@@ -106,21 +115,60 @@ const authService = {
 
   async refreshToken(refreshToken: string) {
     try {
-      const response = await axios.post(`${config.apiUrl}/auth/refresh`, {
-        refreshToken,
+      const response = await axios.post(`${config.apiUrl}/auth/refresh-token`, {
+        refreshToken
       });
-      return response.data;
-    } catch (error) {
-      throw error;
+      
+      if (!response.data?.data?.accessToken) {
+        throw new Error('No access token in response');
+      }
+
+      return {
+        success: true,
+        data: {
+          accessToken: response.data.data.accessToken,
+          refreshToken: response.data.data.refreshToken
+        }
+      };
+    } catch (error: any) {
+      console.error('Refresh token error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Une erreur est survenue'
+      };
     }
   },
 
   async logout() {
     try {
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
+      console.log('🔒 Starting logout process...');
+      const token = await AsyncStorage.getItem('accessToken');
+      console.log('🔑 Current access token:', token);
+      
+      await axios.post(`${config.apiUrl}/auth/logout`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('✅ Backend logout successful');
+
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user', 'token']);
+      console.log('🧹 Local storage cleared');
+      
+      // Vérifier que tout est bien supprimé
+      const remainingToken = await AsyncStorage.getItem('accessToken');
+      const remainingRefreshToken = await AsyncStorage.getItem('refreshToken');
+      const remainingUser = await AsyncStorage.getItem('user');
+      console.log('🔍 Storage check after logout:', {
+        accessToken: remainingToken ? 'Still present' : 'Cleared',
+        refreshToken: remainingRefreshToken ? 'Still present' : 'Cleared',
+        user: remainingUser ? 'Still present' : 'Cleared'
+      });
+
       return { success: true };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
       return { success: false };
     }
   },

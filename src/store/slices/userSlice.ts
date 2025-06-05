@@ -50,7 +50,7 @@ const initialState: UserState = {
 export const fetchUserStats = createAsyncThunk(
   'user/fetchStats',
   async () => {
-    const token = await AsyncStorage.getItem('token');
+    const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
     const response = await axios.get(`${config.apiUrl}/users/stats`, {
@@ -63,7 +63,7 @@ export const fetchUserStats = createAsyncThunk(
 export const fetchUserSocial = createAsyncThunk(
   'user/fetchSocial',
   async () => {
-    const token = await AsyncStorage.getItem('token');
+    const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
     const response = await axios.get(`${config.apiUrl}/users/social`, {

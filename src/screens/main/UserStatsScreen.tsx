@@ -48,7 +48,7 @@ const UserStatsScreen = () => {
       setError('');
       setUsingMockData(false);
 
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
         console.log('No token found');
         setError('Please login to view stats');

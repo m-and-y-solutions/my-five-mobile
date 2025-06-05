@@ -169,7 +169,7 @@ const authSlice = createSlice({
       })
       .addCase(refreshToken.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload.success) {
+        if (action.payload.success && action.payload.data) {
           state.accessToken = action.payload.data.accessToken;
           state.refreshToken = action.payload.data.refreshToken;
         } else {
@@ -188,10 +188,22 @@ const authSlice = createSlice({
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
+        console.log('🔒 Auth Store - Before logout:', {
+          accessToken: state.accessToken ? 'Present' : 'Missing',
+          refreshToken: state.refreshToken ? 'Present' : 'Missing',
+          user: state.user ? 'Present' : 'Missing'
+        });
+        
         state.accessToken = null;
         state.refreshToken = null;
         state.user = null;
         state.error = null;
+        
+        console.log('🧹 Auth Store - After logout:', {
+          accessToken: state.accessToken ? 'Present' : 'Missing',
+          refreshToken: state.refreshToken ? 'Present' : 'Missing',
+          user: state.user ? 'Present' : 'Missing'
+        });
       });
   },
 });

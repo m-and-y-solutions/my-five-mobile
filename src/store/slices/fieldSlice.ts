@@ -52,7 +52,7 @@ const initialState: FieldState = {
 export const fetchFields = createAsyncThunk(
   'field/fetchFields',
   async () => {
-    const token = await AsyncStorage.getItem('token');
+    const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
     const response = await axios.get(`${config.serverUrl}/api/fields`, {
@@ -67,7 +67,7 @@ export const fetchFields = createAsyncThunk(
 export const fetchFieldById = createAsyncThunk(
   'field/fetchFieldById',
   async (fieldId: string) => {
-    const token = await AsyncStorage.getItem('token');
+    const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
     const response = await axios.get(`${config.serverUrl}/api/fields/${fieldId}`, {

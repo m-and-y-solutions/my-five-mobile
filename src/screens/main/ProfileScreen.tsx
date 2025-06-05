@@ -67,7 +67,8 @@ const ProfileScreen = () => {
         <Text style={styles.errorText}>{error}</Text>
         <Button
           mode="contained"
-          onPress={fetchUserData}
+          // onPress={fetchUserData}
+          onPress={()=>dispatch(logout())}
           style={styles.retryButton}
           buttonColor="#4CAF50"
         >

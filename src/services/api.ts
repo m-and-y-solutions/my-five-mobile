@@ -40,7 +40,11 @@ api.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const { accessToken, refreshToken: newRefreshToken } = await authService.refreshToken(refreshToken);
+        const response = await authService.refreshToken(refreshToken);
+        if (!response.success || !response.data) {
+          throw new Error('Failed to refresh token');
+        }
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
 
         // Store new tokens
         await AsyncStorage.setItem('accessToken', accessToken);
