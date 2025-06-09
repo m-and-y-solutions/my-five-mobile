@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Button, useTheme, ActivityIndicator, Text, Searchbar } from 'react-native-paper';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { Button, useTheme, ActivityIndicator, Text, Searchbar, FAB } from 'react-native-paper';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
@@ -27,17 +27,19 @@ const MatchesScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { matches, loading, error } = useSelector((state: RootState) => state.match);
 
-  useEffect(() => {
-    fetchMatches();
-    return ()=> {
-    dispatch(resetMatches());
-    };
-  }, [activeTab]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchMatches();
+      return () => {
+        dispatch(resetMatches());
+      };
+    }, [activeTab])
+  );
 
   const fetchMatches = async () => {
     try {
       if (route.params?.isUserMatches) {
-        await dispatch(fetchUserMatches('activeTab'));
+        await dispatch(fetchUserMatches(activeTab));
       } else {
         await dispatch(fetchAllMatches(activeTab));
       }
@@ -156,6 +158,12 @@ const MatchesScreen = () => {
   return (
     <View style={styles.container}>
       {renderContent()}
+      <FAB
+        icon="plus"
+        style={[styles.fab, { backgroundColor: '#4CAF50' }]}
+        onPress={() => navigation.navigate('CreateMatch')}
+        color="#fff"
+      />
     </View>
   );
 };
@@ -229,6 +237,13 @@ const styles = StyleSheet.create({
     color: '#856404',
     textAlign: 'center',
     fontSize: 12,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8,
   },
 });
 
