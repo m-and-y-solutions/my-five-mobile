@@ -67,8 +67,8 @@ const ProfileScreen = () => {
         <Text style={styles.errorText}>{error}</Text>
         <Button
           mode="contained"
-          // onPress={fetchUserData}
-          onPress={()=>dispatch(logout())}
+          onPress={fetchUserData}
+          // onPress={()=>dispatch(logout())}
           style={styles.retryButton}
           buttonColor="#4CAF50"
         >
@@ -85,50 +85,50 @@ const ProfileScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.avatarContainer}>
-            <Avatar.Image
-              size={80}
-              source={
-                user.profileImage
-                  ? { uri: config.serverUrl + user.profileImage }
-                  : require('../../../assets/default-avatar.png')
-              }
-            />
-            <Text variant="titleMedium" style={styles.name}>
-              {user.firstName} {user.lastName}
-            </Text>
+     <View style={styles.profileCard}>
+        <View style={styles.avatarContainer}>
+          <Avatar.Image
+            size={100}
+            source={
+              user.profileImage
+                ? { uri: config.serverUrl + user.profileImage }
+                : require('../../../assets/default-avatar.png')
+            }
+            style={styles.avatar}
+          />
+          <Text variant="titleLarge" style={styles.name}>
+            {user.firstName} {user.lastName}
+          </Text>
+          <Text variant="bodyMedium" style={styles.email}>
+            {user.email}
+          </Text>
+        </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{social?.groups || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Groupes</Text>
           </View>
-          <View style={styles.statsContainer}>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social?.groups || 0}</Text>
-                <Text variant="bodyMedium">Groupes</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social?.following || 0}</Text>
-                <Text variant="bodyMedium">Suivis</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social?.followers || 0}</Text>
-                <Text variant="bodyMedium">Abonnés</Text>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{stats?.totalMatches || 0}</Text>
-                <Text variant="bodyMedium">Matchs</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{user.score}</Text>
-                <Text variant="bodyMedium">Score</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{user.ranking}</Text>
-                <Text variant="bodyMedium">Classement</Text>
-              </View>
-            </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{social?.following || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Suivis</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{social?.followers || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Abonnés</Text>
+          </View>
+        </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{stats?.totalMatches || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Matchs</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{user.score}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Score</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{user.ranking}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Classement</Text>
           </View>
         </View>
       </View>
@@ -181,7 +181,7 @@ const ProfileScreen = () => {
       <View style={styles.section}>
         <Button
           mode="contained"
-          onPress={handleLogout}
+          onPress={() => dispatch(logout())}
           style={styles.logoutButton}
           buttonColor="red"
         >
@@ -213,24 +213,60 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 15,
   },
+  profileCard: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    margin: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   avatarContainer: {
     marginRight: 20,
     alignItems: 'center',
   },
-  statsContainer: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    padding: 10,
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
   },
+  email: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+    flexWrap: 'wrap',
+  },
+  statItem: {
+    alignItems: 'center',
+    width: '30%',
+    marginBottom: 15,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 10,
-  },
-  statItem: {
-    alignItems: 'center',
-    minWidth: 60,
   },
   statNumber: {
     fontWeight: 'bold',
