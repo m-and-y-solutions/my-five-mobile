@@ -1,35 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Text, Button, Avatar, List, useTheme, ActivityIndicator } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, ProfileStackParamList } from '../../types/navigation.types';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
-import { fetchUserStats, fetchUserSocial } from '../../store/slices/userSlice';
+import { fetchUserStats, fetchUserSocial, fetchUserById } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store';
 import config from '../../config/config';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList, 'ProfileMain'>;
+type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 
 const ProfileScreen = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { stats, social, loading, error } = useSelector((state: RootState) => state.user);
+  const route = useRoute<ProfileScreenRouteProp>();
+  const { user: currentUser } = useSelector((state: RootState) => state.auth);
+  const { stats, social, loading, error, selectedUser } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const theme = useTheme();
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserData();
-    }
-  }, [user]);
+  const userId = route.params?.userId || currentUser?.id;
+  const isCurrentUser = !route.params?.userId || route.params.userId === currentUser?.id;
+  const user = isCurrentUser ? currentUser : selectedUser;
+
+  // useEffect(() => {
+  //   console.log('--------',route.params?.userId, userId, currentUser?.id)
+  //   if (userId) {
+  //     console.log('navigation to userid',route.params?.userId,'current',currentUser?.id)
+  //     fetchUserData();
+  //   }
+  // }, [userId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+       console.log('--------',route.params, userId, currentUser?.id)
+
+      if (userId) {
+        console.log('Screen focused, fetching data for user:', userId);
+        fetchUserData();
+      }
+    }, [userId])
+  );
 
   const fetchUserData = async () => {
     try {
-      await dispatch(fetchUserStats());
-      await dispatch(fetchUserSocial());
+      console.log(isCurrentUser);
+
+      if (isCurrentUser) {
+        await dispatch(fetchUserStats());
+        await dispatch(fetchUserSocial());
+      } else {
+        await dispatch(fetchUserById(userId));
+      }
     } catch (err: any) {
       console.error('Error in fetchUserData:', err);
     }
@@ -68,7 +94,6 @@ const ProfileScreen = () => {
         <Button
           mode="contained"
           onPress={fetchUserData}
-          // onPress={()=>dispatch(logout())}
           style={styles.retryButton}
           buttonColor="#4CAF50"
         >
@@ -85,7 +110,7 @@ const ProfileScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-     <View style={styles.profileCard}>
+      <View style={styles.profileCard}>
         <View style={styles.avatarContainer}>
           <Avatar.Image
             size={100}
@@ -133,61 +158,64 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
-          Informations du profil
-        </Text>
-        <List.Item
-          title="Email"
-          description={user.email}
-          left={props => <List.Icon {...props} icon="email" color="#4CAF50" />}
-        />
-        <List.Item
-          title="Modifier le profil"
-          description="Mettre à jour vos informations personnelles"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
-        />
+      {isCurrentUser && (
+        <>
+          <View style={styles.section}>
+            <Text variant="titleLarge" style={styles.sectionTitle}>
+              Informations du profil
+            </Text>
+            <List.Item
+              title="Email"
+              description={user.email}
+              left={props => <List.Icon {...props} icon="email" color="#4CAF50" />}
+            />
+            <List.Item
+              title="Modifier le profil"
+              description="Mettre à jour vos informations personnelles"
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+            />
+            <List.Item
+              title="Préférences"
+              description="Définir vos préférences de match"
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+            />
+          </View>
 
-        <List.Item
-          title="Préférences"
-          description="Définir vos préférences de match"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
-        />
-      </View>
+          <View style={styles.section}>
+            <Text variant="titleLarge" style={styles.sectionTitle}>
+              Activité
+            </Text>
+            <List.Item
+              title="Mes matchs"
+              description="Voir mes matchs à venir et passés"
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
+            />
+            <List.Item
+              title="Statistiques"
+              description="Voir mes statistiques et réalisations"
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              onPress={() => navigation.navigate('UserStats')}
+            />
+            <List.Item
+              title="Groupes"
+              description="Gérer vos groupes"
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+            />
+          </View>
 
-      <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
-          Activité
-        </Text>
-        <List.Item
-          title="Mes matchs"
-          description="Voir mes matchs à venir et passés"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
-          onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
-        />
-        <List.Item
-          title="Statistiques"
-          description="Voir mes statistiques et réalisations"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
-          onPress={() => navigation.navigate('UserStats')}
-        />
-        <List.Item
-          title="Groupes"
-          description="Gérer vos groupes"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Button
-          mode="contained"
-          onPress={() => dispatch(logout())}
-          style={styles.logoutButton}
-          buttonColor="red"
-        >
-          Déconnexion
-        </Button>
-      </View>
+          <View style={styles.section}>
+            <Button
+              mode="contained"
+              onPress={handleLogout}
+              style={styles.logoutButton}
+              buttonColor="red"
+            >
+              Déconnexion
+            </Button>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 };

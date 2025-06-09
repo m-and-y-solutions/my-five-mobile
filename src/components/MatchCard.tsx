@@ -25,8 +25,14 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
   const [selectedTeam, setSelectedTeam] = useState<'team1' | 'team2' | null>(null);
 
   const handlePlayerPress = (userId: string) => {
-    navigation.navigate('UserStats');
+    console.log('Navigating to profile with userId:', userId);
+    navigation.navigate('Profile', { userId: userId });
   };
+
+  // const handlePlayerPress = (userId: string) => {
+  //   console.log('Navigating to profile with userId:', userId);
+  //   navigation.navigate('ProfileMain', { userId: userId }); // Changez 'Profile' en 'ProfileMain'
+  // };
 
   const handleJoinPress = (team: 'team1' | 'team2') => {
     setSelectedTeam(team);

@@ -205,6 +205,20 @@ const Navigation = () => {
                   ),
                 }}
               />
+              <Stack.Screen
+                name="Profile"
+                component={ProfileScreen}
+                options={{
+                  headerShown: true,
+                  title: 'Profil',
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                }}
+              />
             </>
           )}
         </>

@@ -6,7 +6,8 @@ export type RootStackParamList = {
   MatchDetails: { matchId: string };
   CreateMatch: undefined;
   Matches: { isUserMatches?: boolean };
-  Profile: undefined;
+  Profile: { userId: string };
+  ProfileMain: undefined;
   Settings: undefined;
   UserStats: undefined;
 }; 

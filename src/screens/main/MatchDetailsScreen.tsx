@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, ViewStyle } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, ViewStyle, TouchableOpacity } from 'react-native';
 import { Text, Button, useTheme, ActivityIndicator, Avatar, IconButton, TextInput } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,7 +10,7 @@ import { RootState, AppDispatch } from '../../store';
 import { fetchMatchById, joinMatch, leaveMatch, updateCaptain, updatePlayerStats, updateMatchScore } from '../../store/slices/matchSlice';
 import config from '../../config/config';
 
-type MatchDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MatchDetails'>;
+type MatchDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MatchDetails' | 'Profile'>;
 type MatchDetailsScreenRouteProp = RouteProp<RootStackParamList, 'MatchDetails'>;
 
 const MatchDetailsScreen = () => {
@@ -135,6 +135,10 @@ const MatchDetailsScreen = () => {
     }
   };
 
+  const handlePlayerPress = (userId: string) => {
+    navigation.navigate('Profile', { userId });
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
@@ -233,29 +237,34 @@ const MatchDetailsScreen = () => {
             <View style={styles.participantsList}>
               {selectedMatch.team1?.players.map((teamPlayer) => (
                 <View key={teamPlayer.player.id} style={styles.participantItem}>
-                  <Avatar.Image
-                    size={40}
-                    source={
-                      teamPlayer.player.profileImage
-                        ? { uri: config.serverUrl + teamPlayer.player.profileImage }
-                        : require('../../../assets/default-avatar.png')
-                    }
-                  />
-                  <View style={styles.participantInfo}>
-                    <Text style={styles.participantName}>
-                      {teamPlayer.player.firstName} {teamPlayer.player.lastName}
-                    </Text>
-                    {teamPlayer.isCaptain && (
-                      <Text style={styles.captainText}>Capitaine</Text>
-                    )}
-                    {selectedMatch.status === 'completed' && teamPlayer.stats && (
-                      <View style={styles.statsContainer}>
-                        <Text style={styles.statsText}>
-                          {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                  <TouchableOpacity 
+                    onPress={() => handlePlayerPress(teamPlayer.player.id)}
+                    style={styles.participantTouchable}
+                  >
+                    <Avatar.Image
+                      size={40}
+                      source={
+                        teamPlayer.player.profileImage
+                          ? { uri: config.serverUrl + teamPlayer.player.profileImage }
+                          : require('../../../assets/default-avatar.png')
+                      }
+                    />
+                    <View style={styles.participantInfo}>
+                      <Text style={styles.participantName}>
+                        {teamPlayer.player.firstName} {teamPlayer.player.lastName}
+                      </Text>
+                      {teamPlayer.isCaptain && (
+                        <Text style={styles.captainText}>Capitaine</Text>
+                      )}
+                      {selectedMatch.status === 'completed' && teamPlayer.stats && (
+                        <View style={styles.statsContainer}>
+                          <Text style={styles.statsText}>
+                            {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
                   {user?.id === selectedMatch.creator.id && (
                     <View style={styles.playerActions}>
                       <IconButton
@@ -295,29 +304,34 @@ const MatchDetailsScreen = () => {
             <View style={styles.participantsList}>
               {selectedMatch.team2?.players.map((teamPlayer) => (
                 <View key={teamPlayer.player.id} style={styles.participantItem}>
-                  <Avatar.Image
-                    size={40}
-                    source={
-                      teamPlayer.player.profileImage
-                        ? { uri: config.serverUrl + teamPlayer.player.profileImage }
-                        : require('../../../assets/default-avatar.png')
-                    }
-                  />
-                  <View style={styles.participantInfo}>
-                    <Text style={styles.participantName}>
-                      {teamPlayer.player.firstName} {teamPlayer.player.lastName}
-                    </Text>
-                    {teamPlayer.isCaptain && (
-                      <Text style={styles.captainText}>Capitaine</Text>
-                    )}
-                    {selectedMatch.status === 'completed' && teamPlayer.stats && (
-                      <View style={styles.statsContainer}>
-                        <Text style={styles.statsText}>
-                          {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                  <TouchableOpacity 
+                    onPress={() => handlePlayerPress(teamPlayer.player.id)}
+                    style={styles.participantTouchable}
+                  >
+                    <Avatar.Image
+                      size={40}
+                      source={
+                        teamPlayer.player.profileImage
+                          ? { uri: config.serverUrl + teamPlayer.player.profileImage }
+                          : require('../../../assets/default-avatar.png')
+                      }
+                    />
+                    <View style={styles.participantInfo}>
+                      <Text style={styles.participantName}>
+                        {teamPlayer.player.firstName} {teamPlayer.player.lastName}
+                      </Text>
+                      {teamPlayer.isCaptain && (
+                        <Text style={styles.captainText}>Capitaine</Text>
+                      )}
+                      {selectedMatch.status === 'completed' && teamPlayer.stats && (
+                        <View style={styles.statsContainer}>
+                          <Text style={styles.statsText}>
+                            {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
                   {user?.id === selectedMatch.creator.id && (
                     <View style={styles.playerActions}>
                       <IconButton
@@ -735,6 +749,10 @@ const styles = StyleSheet.create({
   },
   statsInput: {
     marginBottom: 10,
+  },
+  participantTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 

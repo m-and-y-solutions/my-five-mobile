@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { User } from '../../types/user.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../../config/config';
 
@@ -38,6 +39,7 @@ interface UserState {
   social: UserSocial | null;
   loading: boolean;
   error: string | null;
+  selectedUser: User | null;
 }
 
 const initialState: UserState = {
@@ -45,6 +47,7 @@ const initialState: UserState = {
   social: null,
   loading: false,
   error: null,
+  selectedUser: null,
 };
 
 export const fetchUserStats = createAsyncThunk(
@@ -67,6 +70,18 @@ export const fetchUserSocial = createAsyncThunk(
     if (!token) throw new Error('No token found');
     
     const response = await axios.get(`${config.apiUrl}/users/social`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  }
+);
+
+export const fetchUserById = createAsyncThunk(
+  'user/fetchById',
+  async (userId: string) => {
+    const token = await AsyncStorage.getItem('accessToken');
+
+    const response = await axios.get(`${config.apiUrl}/users/${userId}`,{
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -110,6 +125,19 @@ const userSlice = createSlice({
       .addCase(fetchUserSocial.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch user social data';
+      })
+      // Fetch User by ID
+      .addCase(fetchUserById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedUser = action.payload;
+      })
+      .addCase(fetchUserById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Une erreur est survenue';
       });
   },
 });
