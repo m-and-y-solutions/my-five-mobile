@@ -41,6 +41,8 @@ const CreateMatchScreen = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [duration, setDuration] = useState('60');
+  const [showDurationModal, setShowDurationModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchFields());
@@ -61,18 +63,57 @@ const CreateMatchScreen = () => {
     setFieldsByCity(organizedFields);
   }, [fields]);
 
+  const validateTime = (selectedDate: Date, selectedTime: string) => {
+    const newErrors: {[key: string]: string} = {};
+    const dayOfWeek = selectedDate.getDay(); // 0 = Dimanche, 1 = Lundi, etc.
+    const [hours, minutes] = selectedTime.split(':').map(Number);
+    
+    // Vérifier les horaires selon le jour
+    let isValidTime = false;
+    if (dayOfWeek === 0) { // Dimanche
+      isValidTime = (hours >= 10 && hours < 24) || (hours >= 0 && hours < 1);
+    } else if (dayOfWeek === 3 || dayOfWeek === 6) { // Mercredi ou Samedi
+      isValidTime = (hours >= 13 && hours < 24) || (hours >= 0 && hours < 1);
+    } else { // Lundi, Mardi, Jeudi, Vendredi
+      isValidTime = (hours >= 16 && hours < 24) || (hours >= 0 && hours < 1);
+    }
+
+    if (!isValidTime) {
+      newErrors.time = `L'heure n'est pas dans les horaires d'ouverture : 
+      Lundi – Mardi – Jeudi – Vendredi : De 16H à 02H
+      Mercredi – Samedi : De 13H à 02H
+      Dimanche : de 10H à 02`;
+    }
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
       setSelectedDate(selectedDate);
       setDate(format(selectedDate, 'dd/MM/yyyy'));
+      // Réinitialiser l'erreur de date
+      setErrors(prev => ({ ...prev, date: '' }));
+      
+      // Si l'heure est déjà sélectionnée, valider à nouveau
+      if (time) {
+        validateTime(selectedDate, time);
+      }
     }
   };
 
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(false);
     if (selectedTime) {
-      setTime(format(selectedTime, 'HH:mm'));
+      const formattedTime = format(selectedTime, 'HH:mm');
+      setTime(formattedTime);
+      // Réinitialiser l'erreur de temps
+      setErrors(prev => ({ ...prev, time: '' }));
+      
+      // Valider le temps avec la date sélectionnée
+      validateTime(selectedDate, formattedTime);
     }
   };
 
@@ -95,10 +136,7 @@ const CreateMatchScreen = () => {
     if (!time) {
       newErrors.time = "L'heure est requise";
     } else {
-      const [hours, minutes] = time.split(':').map(Number);
-      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        newErrors.time = "Format d'heure invalide (HH:MM)";
-      }
+      validateTime(selectedDateObj, time);
     }
 
     // City validation
@@ -228,6 +266,78 @@ const CreateMatchScreen = () => {
                     locale="fr-FR"
                   />
                 )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TouchableOpacity 
+                  onPress={() => setShowDurationModal(true)}
+                  style={styles.touchableInput}
+                >
+                  <TextInput
+                    label="Durée du match"
+                    value={`${duration} minutes`}
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="clock" />}
+                    right={<TextInput.Icon icon="chevron-down" />}
+                    outlineColor='#4CAF50'
+                    activeOutlineColor='#4CAF50'
+                    editable={false}
+                  />
+                </TouchableOpacity>
+                <Modal
+                  visible={showDurationModal}
+                  transparent
+                  animationType="slide"
+                  onRequestClose={() => setShowDurationModal(false)}
+                >
+                  <TouchableOpacity 
+                    style={styles.modalContainer}
+                    activeOpacity={1}
+                    onPress={() => setShowDurationModal(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Sélectionner la durée</Text>
+                        <IconButton
+                          icon="close"
+                          size={24}
+                          onPress={() => setShowDurationModal(false)}
+                        />
+                      </View>
+                      <List.Item
+                        title="60 minutes"
+                        onPress={() => {
+                          setDuration('60');
+                          setShowDurationModal(false);
+                        }}
+                        style={styles.listItem}
+                        left={props => (
+                          <List.Icon 
+                            {...props} 
+                            icon={duration === '60' ? "check-circle" : "circle-outline"}
+                            color="#4CAF50"
+                          />
+                        )}
+                      />
+                      <List.Item
+                        title="90 minutes"
+                        onPress={() => {
+                          setDuration('90');
+                          setShowDurationModal(false);
+                        }}
+                        style={styles.listItem}
+                        left={props => (
+                          <List.Icon 
+                            {...props} 
+                            icon={duration === '90' ? "check-circle" : "circle-outline"}
+                            color="#4CAF50"
+                          />
+                        )}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
               </View>
 
               <View style={styles.inputContainer}>
