@@ -144,8 +144,8 @@ const matchService = {
     return response.data;
   },
 
-  async joinMatch(id: string) {
-    const response = await api.post(`${config.apiUrl}/matches/${id}/join`);
+  async joinMatch(id: string, team: 'team1' | 'team2') {
+    const response = await api.post(`${config.apiUrl}/matches/${id}/join`, { team });
     return response.data;
   },
 

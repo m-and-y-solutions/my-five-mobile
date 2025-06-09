@@ -1,10 +1,14 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Card, Text, Avatar, Button, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Match } from '../services/matchService';
+import { useDispatch } from 'react-redux';
+import { joinMatch } from '../store/slices/matchSlice';
+import { AppDispatch } from '../store';
+import config from 'config/config';
 
 type MatchCardProps = {
   match: Match;
@@ -16,9 +20,29 @@ type MatchCardNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const MatchCard = ({ match, onPress }: MatchCardProps) => {
   const navigation = useNavigation<MatchCardNavigationProp>();
   const theme = useTheme();
+  const dispatch = useDispatch<AppDispatch>();
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<'team1' | 'team2' | null>(null);
 
   const handlePlayerPress = (userId: string) => {
     navigation.navigate('UserStats');
+  };
+
+  const handleJoinPress = (team: 'team1' | 'team2') => {
+    setSelectedTeam(team);
+    setJoinModalVisible(true);
+  };
+
+  const handleConfirmJoin = async () => {
+    if (selectedTeam) {
+      try {
+        await dispatch(joinMatch({ matchId: match.id, team: selectedTeam }));
+        setJoinModalVisible(false);
+        setSelectedTeam(null);
+      } catch (error) {
+        console.error('Error joining match:', error);
+      }
+    }
   };
 
   const renderPlayerAvatar = (teamPlayer: any) => {
@@ -28,7 +52,7 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
           size={40}
           source={
             teamPlayer.player.profileImage
-              ? { uri: teamPlayer.player.profileImage }
+              ? { uri: config.serverUrl + teamPlayer.player.profileImage }
               : require('../../assets/default-avatar.png')
           }
         />
@@ -77,7 +101,7 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
                 <View key={`empty-${index}`} style={styles.emptyPlayerSlot}>
                   {match.status === 'upcoming' ? (
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('MatchDetails', { matchId: match.id })}
+                      onPress={() => handleJoinPress(isTeam1 ? 'team1' : 'team2')}
                       style={styles.joinButton}
                     >
                       <Text style={styles.joinButtonText}>+</Text>
@@ -98,43 +122,77 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
   };
 
   return (
-    <Card style={styles.card} onPress={onPress}>
-      <Card.Title
-        title={match.title}
-        subtitle={`${match.field.name}, ${match.field.city}`}
-        titleStyle={styles.cardTitle}
-        subtitleStyle={styles.cardSubtitle}
-      />
-      <Card.Content>
-        <View style={styles.matchInfo}>
-          <View style={styles.teamsContainer}>
-            {renderTeam(match.team1, true)}
-            <View style={styles.divider} />
-            {renderTeam(match.team2, false)}
+    <>
+      <Card style={styles.card} onPress={onPress}>
+        <Card.Title
+          title={match.title}
+          subtitle={`${match.field.name}, ${match.field.city}`}
+          titleStyle={styles.cardTitle}
+          subtitleStyle={styles.cardSubtitle}
+        />
+        <Card.Content>
+          <View style={styles.matchInfo}>
+            <View style={styles.teamsContainer}>
+              {renderTeam(match.team1, true)}
+              <View style={styles.divider} />
+              {renderTeam(match.team2, false)}
+            </View>
+            <View style={styles.matchDetails}>
+              <Text style={styles.detailText}>Date: {new Date(match.date).toLocaleDateString()}</Text>
+              <Text style={styles.detailText}>Heure: {match.time}</Text>
+              <Text style={styles.detailText}>Prix: {match.price} {match.currency}</Text>
+              {match.team1 && match.team2 && (
+                <Text style={styles.scoreText}>
+                  Score: {match.team1.score} - {match.team2.score}
+                </Text>
+              )}
+            </View>
           </View>
-          <View style={styles.matchDetails}>
-            <Text style={styles.detailText}>Date: {new Date(match.date).toLocaleDateString()}</Text>
-            <Text style={styles.detailText}>Heure: {match.time}</Text>
-            <Text style={styles.detailText}>Prix: {match.price} {match.currency}</Text>
-            {match.team1 && match.team2 && (
-              <Text style={styles.scoreText}>
-                Score: {match.team1.score} - {match.team2.score}
-              </Text>
-            )}
+        </Card.Content>
+        <Card.Actions style={styles.cardActions}>
+          <Button
+            mode="outlined"
+            onPress={onPress}
+            style={styles.detailsButton}
+            labelStyle={styles.detailsButtonLabel}
+          >
+            Détails
+          </Button>
+        </Card.Actions>
+      </Card>
+
+      <Modal
+        visible={joinModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setJoinModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Rejoindre le match</Text>
+            <Text style={styles.modalText}>
+              Voulez-vous rejoindre {selectedTeam === 'team1' ? match.team1?.name : match.team2?.name} ?
+            </Text>
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={() => setJoinModalVisible(false)}
+                style={styles.modalButton}
+              >
+                Annuler
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleConfirmJoin}
+                style={[styles.modalButton, styles.confirmButton]}
+              >
+                Confirmer
+              </Button>
+            </View>
           </View>
         </View>
-      </Card.Content>
-      <Card.Actions style={styles.cardActions}>
-        <Button
-          mode="outlined"
-          onPress={onPress}
-          style={styles.detailsButton}
-          labelStyle={styles.detailsButtonLabel}
-        >
-          Détails
-        </Button>
-      </Card.Actions>
-    </Card>
+      </Modal>
+    </>
   );
 };
 
@@ -290,6 +348,41 @@ const styles = StyleSheet.create({
   detailsButtonLabel: {
     color: '#4CAF50',
     fontWeight: '500',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  modalText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  confirmButton: {
+    backgroundColor: '#4CAF50',
   },
 });
 

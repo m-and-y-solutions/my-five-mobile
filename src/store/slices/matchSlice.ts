@@ -29,8 +29,8 @@ export const fetchMatchById = createAsyncThunk(
 
 export const joinMatch = createAsyncThunk(
   'match/joinMatch',
-  async (matchId: string) => {
-    return await matchService.joinMatch(matchId);
+  async ({ matchId, team }: { matchId: string; team: 'team1' | 'team2' }) => {
+    return await matchService.joinMatch(matchId, team);
   }
 );
 

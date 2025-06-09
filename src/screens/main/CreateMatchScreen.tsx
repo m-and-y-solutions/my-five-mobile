@@ -11,6 +11,9 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchFields } from '../../store/slices/fieldSlice';
 import { createMatch } from '../../store/slices/matchSlice';
 import { Field } from '../../store/slices/fieldSlice';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -25,7 +28,7 @@ const CreateMatchScreen = () => {
   
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [maxPlayers, setMaxPlayers] = useState('12');
+  const [maxPlayers, setMaxPlayers] = useState('10');
   const [team1Name, setTeam1Name] = useState('');
   const [team2Name, setTeam2Name] = useState('');
   const [isPublic, setIsPublic] = useState(true);
@@ -35,6 +38,9 @@ const CreateMatchScreen = () => {
   const [fieldModalVisible, setFieldModalVisible] = useState(false);
   const [fieldsByCity, setFieldsByCity] = useState<FieldsByCity>({});
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     dispatch(fetchFields());
@@ -55,23 +61,44 @@ const CreateMatchScreen = () => {
     setFieldsByCity(organizedFields);
   }, [fields]);
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setSelectedDate(selectedDate);
+      setDate(format(selectedDate, 'dd/MM/yyyy'));
+    }
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setTime(format(selectedTime, 'HH:mm'));
+    }
+  };
+
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
-    // Date validation (DD/MM/YYYY format)
-    const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    // Date validation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDateObj = new Date(selectedDate);
+    selectedDateObj.setHours(0, 0, 0, 0);
+
     if (!date) {
       newErrors.date = 'La date est requise';
-    } else if (!dateRegex.test(date)) {
-      newErrors.date = 'Format de date invalide (JJ/MM/AAAA)';
+    } else if (selectedDateObj < today) {
+      newErrors.date = 'La date ne peut pas être dans le passé';
     }
 
-    // Time validation (HH:MM format)
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    // Time validation
     if (!time) {
       newErrors.time = "L'heure est requise";
-    } else if (!timeRegex.test(time)) {
-      newErrors.time = "Format d'heure invalide (HH:MM)";
+    } else {
+      const [hours, minutes] = time.split(':').map(Number);
+      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        newErrors.time = "Format d'heure invalide (HH:MM)";
+      }
     }
 
     // City validation
@@ -82,18 +109,6 @@ const CreateMatchScreen = () => {
     // Field validation
     if (!selectedField) {
       newErrors.field = 'Le terrain est requis';
-    }
-
-    // Max players validation
-    const playersNum = parseInt(maxPlayers);
-    if (!maxPlayers) {
-      newErrors.maxPlayers = 'Le nombre de joueurs est requis';
-    } else if (isNaN(playersNum)) {
-      newErrors.maxPlayers = 'Le nombre de joueurs doit être un nombre';
-    } else if (playersNum < 6 || playersNum > 12) {
-      newErrors.maxPlayers = 'Le nombre de joueurs doit être entre 6 et 12';
-    } else if (playersNum % 2 !== 0) {
-      newErrors.maxPlayers = 'Le nombre de joueurs doit être pair';
     }
 
     setErrors(newErrors);
@@ -161,35 +176,58 @@ const CreateMatchScreen = () => {
                 </View>
               </View>
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Date"
-                  value={date}
-                  onChangeText={setDate}
-                  placeholder="JJ/MM/AAAA"
-                  style={styles.input}
-                  mode="outlined"
-                  left={<TextInput.Icon icon="calendar" />}
-                  outlineColor={errors.date ? '#FF5252' : '#4CAF50'}
-                  activeOutlineColor={errors.date ? '#FF5252' : '#4CAF50'}
-                  error={!!errors.date}
-                />
+                <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                  <TextInput
+                    label="Date"
+                    value={date}
+                    placeholder="JJ/MM/AAAA"
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="calendar" />}
+                    outlineColor={errors.date ? '#FF5252' : '#4CAF50'}
+                    activeOutlineColor={errors.date ? '#FF5252' : '#4CAF50'}
+                    error={!!errors.date}
+                    editable={false}
+                  />
+                </TouchableOpacity>
                 {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    minimumDate={new Date()}
+                    locale="fr-FR"
+                  />
+                )}
               </View>
 
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Heure"
-                  value={time}
-                  onChangeText={setTime}
-                  placeholder="HH:MM"
-                  style={styles.input}
-                  mode="outlined"
-                  left={<TextInput.Icon icon="clock-outline" />}
-                  outlineColor={errors.time ? '#FF5252' : '#4CAF50'}
-                  activeOutlineColor={errors.time ? '#FF5252' : '#4CAF50'}
-                  error={!!errors.time}
-                />
+                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                  <TextInput
+                    label="Heure"
+                    value={time}
+                    placeholder="HH:MM"
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="clock-outline" />}
+                    outlineColor={errors.time ? '#FF5252' : '#4CAF50'}
+                    activeOutlineColor={errors.time ? '#FF5252' : '#4CAF50'}
+                    error={!!errors.time}
+                    editable={false}
+                  />
+                </TouchableOpacity>
                 {errors.time && <Text style={styles.errorText}>{errors.time}</Text>}
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={new Date()}
+                    mode="time"
+                    display="default"
+                    onChange={handleTimeChange}
+                    locale="fr-FR"
+                  />
+                )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -363,16 +401,13 @@ const CreateMatchScreen = () => {
                 <TextInput
                   label="Nombre de joueurs"
                   value={maxPlayers}
-                  onChangeText={setMaxPlayers}
-                  keyboardType="numeric"
                   style={styles.input}
                   mode="outlined"
                   left={<TextInput.Icon icon="account-group" />}
-                  outlineColor={errors.maxPlayers ? '#FF5252' : '#4CAF50'}
-                  activeOutlineColor={errors.maxPlayers ? '#FF5252' : '#4CAF50'}
-                  error={!!errors.maxPlayers}
+                  outlineColor="#BDBDBD"
+                  activeOutlineColor="#BDBDBD"
+                  disabled={true}
                 />
-                {errors.maxPlayers && <Text style={styles.errorText}>{errors.maxPlayers}</Text>}
               </View>
 
               <Button
