@@ -41,6 +41,24 @@ export const leaveMatch = createAsyncThunk(
   }
 );
 
+export const createMatch = createAsyncThunk(
+  'match/createMatch',
+  async (matchData: {
+    title: string;
+    date: string;
+    time: string;
+    maxPlayers: number;
+    type: 'friendly' | 'competitive';
+    visibility: 'public' | 'private';
+    fieldId: string;
+    location: string;
+    team1Name?: string;
+    team2Name?: string;
+  }) => {
+    return await matchService.createMatch(matchData);
+  }
+);
+
 interface MatchState {
   matches: Match[];
   allMatches: Match[];
@@ -169,6 +187,19 @@ const matchSlice = createSlice({
       .addCase(leaveMatch.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to leave match';
+      })
+      .addCase(createMatch.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createMatch.fulfilled, (state, action) => {
+        state.loading = false;
+        state.matches.push(action.payload);
+        state.allMatches.push(action.payload);
+      })
+      .addCase(createMatch.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create match';
       });
   },
 });
