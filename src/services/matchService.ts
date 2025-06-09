@@ -160,9 +160,22 @@ const matchService = {
   },
 
   async updatePlayerStats(id: string, data: UpdatePlayerStatsData) {
-    const response = await api.patch(`${config.apiUrl}/matches/${id}/stats`, data);
+    const response = await api.put(`${config.apiUrl}/matches/${id}/stats`, data);
     return response.data;
   },
+
+  async updateCaptain(id: string, playerId: string, team: 'team1' | 'team2') {
+    const response = await api.put(`${config.apiUrl}/matches/${id}/captain`, {
+      playerId,
+      team
+    });
+    return response.data;
+  },
+
+  async updateMatchScore(id: string, data: UpdateScoreData) {
+    const response = await api.put(`${config.apiUrl}/matches/${id}/score`, data);
+    return response.data;
+  }
 };
 
 export default matchService; 

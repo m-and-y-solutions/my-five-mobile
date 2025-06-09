@@ -3,6 +3,7 @@ import { Match } from '../../services/matchService';
 import matchService from '../../services/matchService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 export const fetchAllMatches = createAsyncThunk(
   'match/fetchAllMatches',
   async (status: string) => {
@@ -56,6 +57,60 @@ export const createMatch = createAsyncThunk(
     team2Name?: string;
   }) => {
     return await matchService.createMatch(matchData);
+  }
+);
+
+interface UpdateCaptainParams {
+  matchId: string;
+  playerId: string;
+  team: 'team1' | 'team2';
+}
+
+interface UpdatePlayerStatsParams {
+  matchId: string;
+  playerId: string;
+  team: 'team1' | 'team2';
+  stats: {
+    goals: number;
+    assists: number;
+  };
+}
+
+interface UpdateMatchScoreParams {
+  matchId: string;
+  team1Score: number;
+  team2Score: number;
+}
+
+export const updateCaptain = createAsyncThunk(
+  'match/updateCaptain',
+  async ({ matchId, playerId, team }: UpdateCaptainParams) => {
+    const response = await matchService.updateMatch(matchId, {
+      [`${team}CaptainId`]: playerId
+    });
+    return response;
+  }
+);
+
+export const updatePlayerStats = createAsyncThunk(
+  'match/updatePlayerStats',
+  async ({ matchId, playerId, team, stats }: UpdatePlayerStatsParams) => {
+    const response = await matchService.updatePlayerStats(matchId, {
+      playerId,
+      ...stats
+    });
+    return response;
+  }
+);
+
+export const updateMatchScore = createAsyncThunk(
+  'match/updateMatchScore',
+  async ({ matchId, team1Score, team2Score }: UpdateMatchScoreParams) => {
+    const response = await matchService.updateScore(matchId, {
+      team1Score,
+      team2Score
+    });
+    return response;
   }
 );
 
@@ -200,6 +255,21 @@ const matchSlice = createSlice({
       .addCase(createMatch.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to create match';
+      })
+      .addCase(updateCaptain.fulfilled, (state, action) => {
+        if (state.selectedMatch) {
+          state.selectedMatch = action.payload;
+        }
+      })
+      .addCase(updatePlayerStats.fulfilled, (state, action) => {
+        if (state.selectedMatch) {
+          state.selectedMatch = action.payload;
+        }
+      })
+      .addCase(updateMatchScore.fulfilled, (state, action) => {
+        if (state.selectedMatch) {
+          state.selectedMatch = action.payload;
+        }
       });
   },
 });
