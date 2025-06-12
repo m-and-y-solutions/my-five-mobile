@@ -35,7 +35,7 @@ export interface Match {
 export interface CreateMatchData {
   title: string;
   description?: string;
-  date: string;
+  date: Date;
   location: string;
   type: string;
   visibility: 'public' | 'private';

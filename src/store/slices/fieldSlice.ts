@@ -71,11 +71,20 @@ const initialState: FieldState = {
 
 export const fetchFields = createAsyncThunk(
   'field/fetchFields',
-  async () => {
+  async (params?: {
+    cityId?: string;
+    date?: Date;
+    duration?: number;
+  }) => {
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
-    const response = await axios.get(`${config.serverUrl}/api/fields`, {
+    const queryParams = new URLSearchParams();
+    if (params?.cityId) queryParams.append('cityId', params.cityId);
+    if (params?.date) queryParams.append('date', params.date.toISOString());
+    if (params?.duration) queryParams.append('duration', params.duration.toString());
+    
+    const response = await axios.get(`${config.serverUrl}/api/fields?${queryParams.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

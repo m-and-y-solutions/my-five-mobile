@@ -11,9 +11,9 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchFields } from '../../store/slices/fieldSlice';
 import { createMatch } from '../../store/slices/matchSlice';
 import { Field } from '../../store/slices/fieldSlice';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { toZonedTime } from 'date-fns-tz';
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -39,10 +39,11 @@ const CreateMatchScreen = () => {
   const [fieldsByCity, setFieldsByCity] = useState<FieldsByCity>({});
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [duration, setDuration] = useState('60');
   const [showDurationModal, setShowDurationModal] = useState(false);
+  const [isFieldSelectionEnabled, setIsFieldSelectionEnabled] = useState(false);
+  const [title, setTitle] = useState('');
 
   const isFieldAvailable = (field: Field) => {
     if (!field.isAvailable) return false;
@@ -80,9 +81,6 @@ const CreateMatchScreen = () => {
     return !hasConflictingBooking;
   };
 
-  useEffect(() => {
-    dispatch(fetchFields());
-  }, [dispatch]);
 
   useEffect(() => {
     const organizedFields: FieldsByCity = {};
@@ -104,10 +102,10 @@ const CreateMatchScreen = () => {
     }
   }, [date, time, duration]);
 
-  const validateTime = (selectedDate: Date, selectedTime: string) => {
+  const validateTime = (selectedDate: Date) => {
     const newErrors: {[key: string]: string} = {};
     const dayOfWeek = selectedDate.getDay();
-    const [hours, minutes] = selectedTime.split(':').map(Number);
+    const hours = selectedDate.getHours();
     
     let isValidTime = false;
     if (dayOfWeek === 0) {
@@ -129,35 +127,20 @@ const CreateMatchScreen = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (selectedDate: Date) => {
+    const timeZone = 'Europe/Brussels';
+    const zonedDate = toZonedTime(selectedDate, timeZone);
+    console.log('----------', { selectedDate, zonedDate });
     setShowDatePicker(false);
-    if (selectedDate) {
-      // Créer une nouvelle date sans composant horaire pour éviter les problèmes de fuseau
-      const localDate = new Date(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate()
-      );
-      
-      setSelectedDate(localDate);
-      setDate(format(localDate, 'dd/MM/yyyy'));
-      setErrors(prev => ({ ...prev, date: '' }));
-      
-      if (time) {
-        validateTime(localDate, time);
-      }
-    }
+    
+    setSelectedDate(selectedDate);
+    setDate(format(zonedDate, 'yyyy-MM-dd'));
+    setTime(format(zonedDate, 'HH:mm'));
+    setErrors(prev => ({ ...prev, date: '', time: '' }));
+    
+    validateTime(zonedDate);
   };
 
-  const handleTimeChange = (event: any, selectedTime?: Date) => {
-    setShowTimePicker(false);
-    if (selectedTime) {
-      const formattedTime = format(selectedTime, 'HH:mm');
-      setTime(formattedTime);
-      setErrors(prev => ({ ...prev, time: '' }));
-      validateTime(selectedDate, formattedTime);
-    }
-  };
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -176,7 +159,7 @@ const CreateMatchScreen = () => {
     if (!time) {
       newErrors.time = "L'heure est requise";
     } else {
-      validateTime(selectedDateObj, time);
+      validateTime(selectedDate);
     }
 
     if (!selectedCity) {
@@ -195,13 +178,12 @@ const CreateMatchScreen = () => {
     if (validateForm()) {
       try {
         const selectedFieldData = fields.find(f => f.id === selectedField);
-        const [day, month, year] = date.split('/');
-        const formattedDate = `${year}-${month}-${day}`;
+        const timeZone = 'Europe/Brussels';
+        const zonedDate = toZonedTime(selectedDate, timeZone);
         
         await dispatch(createMatch({
-          title: `${selectedFieldData?.name} - ${date}`,
-          date: formattedDate,
-          time,
+          title: title || `${selectedFieldData?.name} - ${format(zonedDate, 'dd/MM/yyyy')}`,
+          date: selectedDate,
           maxPlayers: parseInt(maxPlayers),
           type: 'friendly',
           visibility: isPublic ? 'public' : 'private',
@@ -221,6 +203,34 @@ const CreateMatchScreen = () => {
   const selectedCityData = CITIES.find(city => city.id === selectedCity);
   const selectedFieldData = selectedCity ? fieldsByCity[selectedCity]?.find(field => field.id === selectedField) : null;
 
+  const checkRequiredFields = () => {
+    const hasRequiredFields = Boolean(date && time && duration && selectedCity);
+    setIsFieldSelectionEnabled(hasRequiredFields);
+    return hasRequiredFields;
+  };
+
+  useEffect(() => {
+    checkRequiredFields();
+  }, [date, time, duration, selectedCity]);
+
+  const handleFieldSelection = async () => {
+    if (!isFieldSelectionEnabled) return;
+    
+    try {
+      const [day, month, year] = date.split('/');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      await dispatch(fetchFields({
+        cityId: selectedCity || undefined,
+        date: selectedDate,
+        duration: parseInt(duration)
+      }));
+      setFieldModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching available fields:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -234,6 +244,19 @@ const CreateMatchScreen = () => {
         >
           <View style={styles.content}>
             <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="Titre du match"
+                  value={title}
+                  onChangeText={setTitle}
+                  style={styles.input}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="format-title" />}
+                  outlineColor='#4CAF50'
+                  activeOutlineColor='#4CAF50'
+                />
+              </View>
+
               <View style={styles.toggleContainer}>
                 <Text style={styles.toggleLabel}>Visibilité du match</Text>
                 <View style={styles.toggleButtons}>
@@ -273,42 +296,21 @@ const CreateMatchScreen = () => {
                 </TouchableOpacity>
                 {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
                 {showDatePicker && (
-                  <DateTimePicker
-                    value={selectedDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
-                    minimumDate={new Date()}
-                    locale="fr-FR"
-                  />
+                      <DateTimePickerModal
+                      mode="datetime"
+                      onConfirm={handleDateChange}
+                      onCancel={()=> setShowDatePicker(false)}
+                      locale="fr-FR"
+                      is24Hour={true}
+                      isVisible={showDatePicker}
+                      timeZoneName="Europe/Brussels"
+                    />
                 )}
-              </View>
-
-              <View style={styles.inputContainer}>
-                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                  <TextInput
-                    label="Heure"
-                    value={time}
-                    placeholder="HH:MM"
-                    style={styles.input}
-                    mode="outlined"
-                    left={<TextInput.Icon icon="clock-outline" />}
-                    outlineColor={errors.time ? '#FF5252' : '#4CAF50'}
-                    activeOutlineColor={errors.time ? '#FF5252' : '#4CAF50'}
-                    error={!!errors.time}
-                    editable={false}
-                  />
-                </TouchableOpacity>
-                {errors.time && <Text style={styles.errorText}>{errors.time}</Text>}
-                {showTimePicker && (
-                  <DateTimePicker
-                    value={new Date()}
-                    mode="time"
-                    display="default"
-                    onChange={handleTimeChange}
-                    locale="fr-FR"
-                  />
-                )}
+                  {selectedDate && (
+                      <Text>
+                        Match prévu le {selectedDate.toLocaleString('fr-FR', { timeZone: 'Europe/Brussels' })}
+                      </Text>
+                    )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -454,7 +456,7 @@ const CreateMatchScreen = () => {
                           key={city.id}
                           title={city.name}
                           onPress={() => {
-                            setSelectedCity(city.id);
+                            setSelectedCity(city.name);
                             setSelectedField(null);
                             setCityModalVisible(false);
                           }}
@@ -468,13 +470,13 @@ const CreateMatchScreen = () => {
 
               <View style={styles.inputContainer}>
                 <TouchableOpacity 
-                  onPress={() => selectedCity && setFieldModalVisible(true)}
-                  disabled={!selectedCity || fieldsLoading}
+                  onPress={handleFieldSelection}
+                  disabled={!isFieldSelectionEnabled}
                 >
                   <TextInput
                     label="Terrain"
                     value={selectedFieldData ? `${selectedFieldData.name} - ${selectedFieldData.address}` : ''}
-                    placeholder={fieldsLoading ? "Chargement des terrains..." : "Sélectionner un terrain"}
+                    placeholder={!isFieldSelectionEnabled ? "Veuillez remplir les champs précédents" : (fieldsLoading ? "Chargement des terrains..." : "Sélectionner un terrain")}
                     style={styles.input}
                     mode="outlined"
                     left={<TextInput.Icon icon="map-marker" />}
@@ -483,7 +485,7 @@ const CreateMatchScreen = () => {
                     activeOutlineColor={errors.field ? '#FF5252' : '#4CAF50'}
                     error={!!errors.field}
                     editable={false}
-                    disabled={!selectedCity || fieldsLoading}
+                    disabled={!isFieldSelectionEnabled || fieldsLoading}
                   />
                 </TouchableOpacity>
                 {errors.field && <Text style={styles.errorText}>{errors.field}</Text>}
@@ -515,34 +517,28 @@ const CreateMatchScreen = () => {
                         <View style={styles.noFieldsContainer}>
                           <Text style={styles.noFieldsText}>{fieldsError}</Text>
                         </View>
-                      ) : selectedCity && fieldsByCity[selectedCity] ? (
-                        fieldsByCity[selectedCity].map(field => (
+                      ) : fields.length > 0 ? (
+                        fields.map(field => (
                           <List.Item
                             key={field.id}
                             title={`${field.name} - ${field.address}`}
                             onPress={() => {
-                              // if (field.isAvailable) {
-                                setSelectedField(field.id);
-                                setFieldModalVisible(false);
-                              // }
+                              setSelectedField(field.id);
+                              setFieldModalVisible(false);
                             }}
-                            style={[
-                              styles.listItem,
-                              !field.isAvailable && styles.disabledItem
-                            ]}
+                            style={styles.listItem}
                             left={props => (
                               <List.Icon 
                                 {...props} 
-                                icon={field.isAvailable ? "check-circle" : "close-circle"}
-                                color={field.isAvailable ? "#4CAF50" : "#FF5252"}
+                                icon="check-circle"
+                                color="#4CAF50"
                               />
                             )}
-                            description={!field.isAvailable ? "Terrain non disponible" : undefined}
                           />
                         ))
                       ) : (
                         <View style={styles.noFieldsContainer}>
-                          <Text style={styles.noFieldsText}>Aucun terrain trouvé pour cette commune</Text>
+                          <Text style={styles.noFieldsText}>Aucun terrain disponible pour ces critères</Text>
                         </View>
                       )}
                     </View>

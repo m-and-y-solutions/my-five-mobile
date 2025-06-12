@@ -46,8 +46,7 @@ export const createMatch = createAsyncThunk(
   'match/createMatch',
   async (matchData: {
     title: string;
-    date: string;
-    time: string;
+    date: Date;
     maxPlayers: number;
     type: 'friendly' | 'competitive';
     visibility: 'public' | 'private';
