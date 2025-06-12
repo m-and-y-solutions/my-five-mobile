@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Button, useTheme, ActivityIndicator, Text, Searchbar, FAB } from 'react-native-paper';
+import { Button, useTheme, ActivityIndicator, Text, Searchbar, FAB, Chip, Icon } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,12 +20,14 @@ const MatchesScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('upcoming');
   const [refreshing, setRefreshing] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const theme = useTheme();
   const navigation = useNavigation<MatchesScreenNavigationProp>();
   const route = useRoute<MatchesScreenRouteProp>();
   
   const dispatch = useDispatch<AppDispatch>();
   const { matches, loading, error } = useSelector((state: RootState) => state.match);
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -54,11 +56,29 @@ const MatchesScreen = () => {
     setRefreshing(false);
   };
 
-  const filteredMatches = matches.filter((match: Match) =>
-    match.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    match.field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    match.field.city.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const toggleFilter = (filter: string) => {
+    setActiveFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    );
+  };
+
+  const filteredMatches = matches.filter((match: Match) => {
+    const matchesSearch = match.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         match.field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         match.field.city.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const isCreator = match.creator.id === userId;
+    const isParticipant = match.team1?.players.some(p => p.player.id === userId) || 
+                         match.team2?.players.some(p => p.player.id === userId);
+
+    const matchesFilters = activeFilters.length === 0 || 
+      (activeFilters.includes('created') && isCreator) ||
+      (activeFilters.includes('participating') && isParticipant);
+
+    return matchesSearch && matchesFilters;
+  });
 
   const renderContent = () => {
     if (loading && !refreshing) {
@@ -101,6 +121,7 @@ const MatchesScreen = () => {
             inputStyle={styles.searchInput}
             mode="bar"
           />
+       
           <View style={styles.tabs}>
             <Button
               mode={activeTab === 'upcoming' ? 'contained' : 'outlined'}
@@ -138,6 +159,30 @@ const MatchesScreen = () => {
             >
               Terminés
             </Button>
+            
+          </View>
+          <View style={styles.filterTitleContainer}>
+            <Icon source="filter" size={20} color="#4CAF50" />
+            <Text style={styles.filterTitle}>Filtres</Text>
+          </View>
+
+          <View style={styles.filterContainer}>
+            <Chip
+              selected={activeFilters.includes('created')}
+              onPress={() => toggleFilter('created')}
+              style={styles.filterChip}
+              selectedColor="#4CAF50"
+            >
+              Créés par vous
+            </Chip>
+            <Chip
+              selected={activeFilters.includes('participating')}
+              onPress={() => toggleFilter('participating')}
+              style={styles.filterChip}
+              selectedColor="#4CAF50"
+            >
+              Vos participations
+            </Chip>
           </View>
           {filteredMatches.length === 0 ? (
             <Text style={styles.emptyText}>Aucun match trouvé</Text>
@@ -244,6 +289,28 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 8,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 8,
+  },
+  filterChip: {
+    backgroundColor: '#fff',
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+  },
+  filterTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 8,
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 

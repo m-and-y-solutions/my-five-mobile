@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { Card, Text, Avatar, Button, useTheme } from 'react-native-paper';
+import { Card, Text, Avatar, Button, useTheme, Badge } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Match } from '../services/matchService';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { joinMatch } from '../store/slices/matchSlice';
-import { AppDispatch } from '../store';
+import { AppDispatch, RootState } from '../store';
 import config from 'config/config';
 
 type MatchCardProps = {
@@ -23,6 +23,11 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<'team1' | 'team2' | null>(null);
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+
+  const isCreator = match.creator.id=== userId;
+  const isParticipant = match.team1?.players.some(p => p.player.id === userId) || 
+                       match.team2?.players.some(p => p.player.id === userId);
 
   const handlePlayerPress = (userId: string) => {
     console.log('Navigating to profile with userId:', userId);
@@ -135,6 +140,16 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
           subtitle={`${match.field.name}, ${match.field.city}`}
           titleStyle={styles.cardTitle}
           subtitleStyle={styles.cardSubtitle}
+          right={(props) => (
+            <View style={styles.badgeContainer}>
+              {isCreator && (
+                <Badge style={styles.creatorBadge} size={24}>Créateur</Badge>
+              )}
+              {isParticipant && (
+                <Badge style={styles.participantBadge} size={24}>Participant</Badge>
+              )}
+            </View>
+          )}
         />
         <Card.Content>
           <View style={styles.matchInfo}>
@@ -389,6 +404,23 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: '#4CAF50',
+  },
+  badgeContainer: {
+    paddingRight: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  creatorBadge: {
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    fontSize: 12,
+    paddingHorizontal: 8,
+  },
+  participantBadge: {
+    backgroundColor: '#2196F3',
+    color: 'white',
+    fontSize: 12,
+    paddingHorizontal: 8,
   },
 });
 
