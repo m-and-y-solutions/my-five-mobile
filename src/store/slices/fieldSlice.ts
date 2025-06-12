@@ -33,6 +33,26 @@ export interface Field {
   minPlayers: number;
   createdAt: string;
   updatedAt: string;
+  matches?: Array<{
+    id: string;
+    title: string;
+    date: string;
+    time: string;
+    status: string;
+  }>;
+  bookings?: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    isBlocked: boolean;
+    match?: {
+      id: string;
+      title: string;
+      date: string;
+      time: string;
+      status: string;
+    };
+  }>;
 }
 
 interface FieldState {

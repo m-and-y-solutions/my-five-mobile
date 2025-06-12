@@ -44,12 +44,47 @@ const CreateMatchScreen = () => {
   const [duration, setDuration] = useState('60');
   const [showDurationModal, setShowDurationModal] = useState(false);
 
+  const isFieldAvailable = (field: Field) => {
+    if (!field.isAvailable) return false;
+    if (!date || !time) return true;
+
+    const [day, month, year] = date.split('/').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    const selectedDateTime = new Date(year, month - 1, day, hours, minutes);
+    const endDateTime = new Date(selectedDateTime.getTime() + parseInt(duration) * 60000);
+
+    const hasConflictingBooking = field.bookings?.some(booking => {
+      const bookingStart = new Date(booking.startTime);
+      const bookingEnd = new Date(booking.endTime);
+      
+      const isSameDay = 
+        bookingStart.getFullYear() === selectedDateTime.getFullYear() &&
+        bookingStart.getMonth() === selectedDateTime.getMonth() &&
+        bookingStart.getDate() === selectedDateTime.getDate();
+
+      if (!isSameDay) return false;
+
+      const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
+      const bookingEndTime = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+      const selectedStartTime = selectedDateTime.getHours() * 60 + selectedDateTime.getMinutes();
+      const selectedEndTime = endDateTime.getHours() * 60 + endDateTime.getMinutes();
+
+      return (
+        (selectedStartTime >= bookingStartTime && selectedStartTime < bookingEndTime) ||
+        (selectedEndTime > bookingStartTime && selectedEndTime <= bookingEndTime) ||
+        (selectedStartTime <= bookingStartTime && selectedEndTime >= bookingEndTime)
+      );
+    });
+
+    return !hasConflictingBooking;
+  };
+
   useEffect(() => {
     dispatch(fetchFields());
   }, [dispatch]);
 
   useEffect(() => {
-    // Organize fields by city when fields are loaded
     const organizedFields: FieldsByCity = {};
     fields.forEach((field: Field) => {
       const cityId = CITIES.find(city => city.name === field.city)?.id;
@@ -63,18 +98,23 @@ const CreateMatchScreen = () => {
     setFieldsByCity(organizedFields);
   }, [fields]);
 
+  useEffect(() => {
+    if (selectedField && !isFieldAvailable(fields.find(f => f.id === selectedField)!)) {
+      setSelectedField(null);
+    }
+  }, [date, time, duration]);
+
   const validateTime = (selectedDate: Date, selectedTime: string) => {
     const newErrors: {[key: string]: string} = {};
-    const dayOfWeek = selectedDate.getDay(); // 0 = Dimanche, 1 = Lundi, etc.
+    const dayOfWeek = selectedDate.getDay();
     const [hours, minutes] = selectedTime.split(':').map(Number);
     
-    // Vérifier les horaires selon le jour
     let isValidTime = false;
-    if (dayOfWeek === 0) { // Dimanche
+    if (dayOfWeek === 0) {
       isValidTime = (hours >= 10 && hours < 24) || (hours >= 0 && hours < 1);
-    } else if (dayOfWeek === 3 || dayOfWeek === 6) { // Mercredi ou Samedi
+    } else if (dayOfWeek === 3 || dayOfWeek === 6) {
       isValidTime = (hours >= 13 && hours < 24) || (hours >= 0 && hours < 1);
-    } else { // Lundi, Mardi, Jeudi, Vendredi
+    } else {
       isValidTime = (hours >= 16 && hours < 24) || (hours >= 0 && hours < 1);
     }
 
@@ -92,14 +132,19 @@ const CreateMatchScreen = () => {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      setSelectedDate(selectedDate);
-      setDate(format(selectedDate, 'dd/MM/yyyy'));
-      // Réinitialiser l'erreur de date
+      // Créer une nouvelle date sans composant horaire pour éviter les problèmes de fuseau
+      const localDate = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+      );
+      
+      setSelectedDate(localDate);
+      setDate(format(localDate, 'dd/MM/yyyy'));
       setErrors(prev => ({ ...prev, date: '' }));
       
-      // Si l'heure est déjà sélectionnée, valider à nouveau
       if (time) {
-        validateTime(selectedDate, time);
+        validateTime(localDate, time);
       }
     }
   };
@@ -109,10 +154,7 @@ const CreateMatchScreen = () => {
     if (selectedTime) {
       const formattedTime = format(selectedTime, 'HH:mm');
       setTime(formattedTime);
-      // Réinitialiser l'erreur de temps
       setErrors(prev => ({ ...prev, time: '' }));
-      
-      // Valider le temps avec la date sélectionnée
       validateTime(selectedDate, formattedTime);
     }
   };
@@ -120,7 +162,6 @@ const CreateMatchScreen = () => {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
     
-    // Date validation
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDateObj = new Date(selectedDate);
@@ -132,19 +173,16 @@ const CreateMatchScreen = () => {
       newErrors.date = 'La date ne peut pas être dans le passé';
     }
 
-    // Time validation
     if (!time) {
       newErrors.time = "L'heure est requise";
     } else {
       validateTime(selectedDateObj, time);
     }
 
-    // City validation
     if (!selectedCity) {
       newErrors.city = 'La commune est requise';
     }
 
-    // Field validation
     if (!selectedField) {
       newErrors.field = 'Le terrain est requis';
     }
@@ -157,9 +195,12 @@ const CreateMatchScreen = () => {
     if (validateForm()) {
       try {
         const selectedFieldData = fields.find(f => f.id === selectedField);
+        const [day, month, year] = date.split('/');
+        const formattedDate = `${year}-${month}-${day}`;
+        
         await dispatch(createMatch({
           title: `${selectedFieldData?.name} - ${date}`,
-          date,
+          date: formattedDate,
           time,
           maxPlayers: parseInt(maxPlayers),
           type: 'friendly',
@@ -168,6 +209,7 @@ const CreateMatchScreen = () => {
           location: selectedFieldData?.address || '',
           team1Name: team1Name || undefined,
           team2Name: team2Name || undefined,
+          duration: parseInt(duration)
         }));
         navigation.goBack();
       } catch (error: any) {
@@ -213,6 +255,7 @@ const CreateMatchScreen = () => {
                   </TouchableOpacity>
                 </View>
               </View>
+
               <View style={styles.inputContainer}>
                 <TouchableOpacity onPress={() => setShowDatePicker(true)}>
                   <TextInput
@@ -478,10 +521,10 @@ const CreateMatchScreen = () => {
                             key={field.id}
                             title={`${field.name} - ${field.address}`}
                             onPress={() => {
-                              if (field.isAvailable) {
+                              // if (field.isAvailable) {
                                 setSelectedField(field.id);
                                 setFieldModalVisible(false);
-                              }
+                              // }
                             }}
                             style={[
                               styles.listItem,
@@ -660,4 +703,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateMatchScreen; 
+export default CreateMatchScreen;

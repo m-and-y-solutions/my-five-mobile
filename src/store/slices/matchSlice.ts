@@ -55,6 +55,7 @@ export const createMatch = createAsyncThunk(
     location: string;
     team1Name?: string;
     team2Name?: string;
+    duration: number;
   }) => {
     return await matchService.createMatch(matchData);
   }

@@ -40,6 +40,7 @@ export interface CreateMatchData {
   type: string;
   visibility: 'public' | 'private';
   maxPlayers?: number;
+  duration?: number;
 }
 
 export interface UpdateMatchData {
