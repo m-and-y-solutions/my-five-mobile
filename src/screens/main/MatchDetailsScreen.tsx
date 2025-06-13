@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, ViewStyle, TouchableOpacity } from 'react-native';
-import { Text, Button, useTheme, ActivityIndicator, Avatar, IconButton, TextInput } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, ViewStyle, TouchableOpacity, Dimensions } from 'react-native';
+import { Text, Button, useTheme, ActivityIndicator, Avatar, IconButton, TextInput, Divider } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -9,6 +9,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchMatchById, joinMatch, leaveMatch, updateCaptain, updatePlayerStats, updateMatchScore } from '../../store/slices/matchSlice';
 import config from '../../config/config';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const { width } = Dimensions.get('window');
 
 type MatchDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'MatchDetails' | 'Profile'>;
 type MatchDetailsScreenRouteProp = RouteProp<RootStackParamList, 'MatchDetails'>;
@@ -24,11 +27,14 @@ const MatchDetailsScreen = () => {
   const [selectedTeam, setSelectedTeam] = useState<'team1' | 'team2' | null>(null);
   const [scoreModalVisible, setScoreModalVisible] = useState(false);
   const [statsModalVisible, setStatsModalVisible] = useState(false);
-  const [selectedPlayerStats, setSelectedPlayerStats] = useState<{ goals: number; assists: number } | null>(null);
+  const [alertModalVisible, setAlertModalVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [selectedPlayerStats, setSelectedPlayerStats] = useState<{ goals: number; assists: number }>({ goals: 0, assists: 0 });
   const [team1Score, setTeam1Score] = useState(0);
   const [team2Score, setTeam2Score] = useState(0);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedPlayerTeam, setSelectedPlayerTeam] = useState<'team1' | 'team2' | null>(null);
+  const [selectedPlayerName, setSelectedPlayerName] = useState('');
   const theme = useTheme();
 
   useEffect(() => {
@@ -80,6 +86,7 @@ const MatchDetailsScreen = () => {
                        selectedMatch?.team2?.players.some(p => p.player.id === user?.id) || 
                        false;
 
+  const isCreator = user?.id === selectedMatch?.creator.id;
   const totalPlayers = (selectedMatch?.team1?.players.length || 0) + (selectedMatch?.team2?.players.length || 0);
 
   const handleToggleCaptain = async (playerId: string, team: 'team1' | 'team2') => {
@@ -91,19 +98,19 @@ const MatchDetailsScreen = () => {
     }
   };
 
-  const handleEditStats = (playerId: string, team: 'team1' | 'team2') => {
+  const handleEditStats = (playerId: string, team: 'team1' | 'team2', firstName: string, lastName: string) => {
     const teamData = team === 'team1' ? selectedMatch?.team1 : selectedMatch?.team2;
     const player = teamData?.players.find(p => p.player.id === playerId);
-    if (player?.stats) {
-      setSelectedPlayerStats(player.stats);
-      setSelectedPlayerId(playerId);
-      setSelectedPlayerTeam(team);
-      setStatsModalVisible(true);
-    }
+    
+    setSelectedPlayerId(playerId);
+    setSelectedPlayerTeam(team);
+    setSelectedPlayerName(`${firstName} ${lastName}`);
+    setSelectedPlayerStats(player?.stats || { goals: 0, assists: 0 });
+    setStatsModalVisible(true);
   };
 
   const handleUpdateStats = async () => {
-    if (!selectedPlayerId || !selectedPlayerTeam || !selectedPlayerStats) return;
+    if (!selectedPlayerId || !selectedPlayerTeam) return;
     try {
       await dispatch(updatePlayerStats({
         matchId: selectedMatch!.id,
@@ -112,9 +119,6 @@ const MatchDetailsScreen = () => {
         stats: selectedPlayerStats
       }));
       setStatsModalVisible(false);
-      setSelectedPlayerStats(null);
-      setSelectedPlayerId(null);
-      setSelectedPlayerTeam(null);
       await fetchMatchDetails();
     } catch (err: any) {
       console.error('Error in handleUpdateStats:', err);
@@ -139,10 +143,32 @@ const MatchDetailsScreen = () => {
     navigation.navigate('Profile', { userId });
   };
 
+  const handleStatsPress = (playerId: string, team: 'team1' | 'team2', firstName: string, lastName: string) => {
+    if (isCreator) {
+      handleEditStats(playerId, team, firstName, lastName);
+    } else {
+      setAlertMessage('Seul le créateur du match peut modifier les statistiques');
+      setAlertModalVisible(true);
+    }
+  };
+
+  const handleScorePress = () => {
+    if (!selectedMatch) return;
+    
+    if (isCreator) {
+      setTeam1Score(selectedMatch.team1?.score || 0);
+      setTeam2Score(selectedMatch.team2?.score || 0);
+      setScoreModalVisible(true);
+    } else {
+      setAlertMessage('Seul le créateur du match peut modifier le score');
+      setAlertModalVisible(true);
+    }
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -150,12 +176,13 @@ const MatchDetailsScreen = () => {
   if (error || !selectedMatch) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'Match non trouvé'}</Text>
+        <MaterialCommunityIcons name="alert-circle" size={48} color={theme.colors.error} />
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{error || 'Match non trouvé'}</Text>
         <Button
           mode="contained"
           onPress={fetchMatchDetails}
           style={styles.retryButton}
-          buttonColor="#4CAF50"
+          contentStyle={styles.buttonContent}
         >
           Réessayer
         </Button>
@@ -163,42 +190,70 @@ const MatchDetailsScreen = () => {
     );
   }
 
+  const statusColors = {
+    upcoming: '#4CAF50',
+    ongoing: '#FFA000',
+    completed: '#2196F3',
+    cancelled: '#F44336'
+  };
+
+  const statusText = {
+    upcoming: 'À venir',
+    ongoing: 'En cours',
+    completed: 'Terminé',
+    cancelled: 'Annulé'
+  };
+
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={onRefresh} 
+          colors={[theme.colors.primary]}
+        />
       }
     >
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          {selectedMatch.field.name}
-        </Text>
-        <Text variant="titleMedium" style={styles.subtitle}>
-          {new Date(selectedMatch.date).toLocaleDateString()} à{' '}
-          {selectedMatch.time}
-        </Text>
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusBadge, styles[`status${selectedMatch.status}` as keyof typeof styles] as ViewStyle]}>
-            <Text style={styles.statusText}>
-              {selectedMatch.status === 'upcoming' ? 'À venir' : 
-               selectedMatch.status === 'ongoing' ? 'En cours' : 
-               selectedMatch.status === 'completed' ? 'Terminé' : 'Annulé'}
+      {/* Header Section */}
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+        <View style={styles.headerContent}>
+          <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.primary }]}>
+            {selectedMatch.field.name}
+          </Text>
+          <View style={styles.matchInfoRow}>
+            <MaterialCommunityIcons name="calendar" size={16} color={theme.colors.onSurface} />
+            <Text variant="bodyMedium" style={[styles.subtitle, { color: theme.colors.onSurface }]}>
+              {new Date(selectedMatch.date).toLocaleDateString()} à {selectedMatch.time}
+            </Text>
+          </View>
+          <View style={styles.matchInfoRow}>
+            <MaterialCommunityIcons name="account-group" size={16} color={theme.colors.onSurface} />
+            <Text variant="bodyMedium" style={[styles.subtitle, { color: theme.colors.onSurface }]}>
+              {totalPlayers}/{selectedMatch.maxPlayers} joueurs
             </Text>
           </View>
         </View>
+        
+        <View style={[styles.statusBadge, { backgroundColor: statusColors[selectedMatch.status] }]}>
+          <Text style={styles.statusText}>{statusText[selectedMatch.status]}</Text>
+        </View>
       </View>
 
+      {/* Join Section */}
       {user && !isParticipant && selectedMatch.status === 'upcoming' && (
-        <View style={styles.joinSection}>
-          <Text style={styles.joinTitle}>Rejoindre une équipe</Text>
+        <View style={[styles.joinSection, { backgroundColor: theme.colors.surface }]}>
+          <Text variant="titleMedium" style={[styles.joinTitle, { color: theme.colors.primary }]}>
+            Rejoindre une équipe
+          </Text>
           <View style={styles.joinButtons}>
             <Button
               mode="contained"
               onPress={() => handleJoinPress('team1')}
               style={styles.joinButton}
-              buttonColor="#4CAF50"
+              contentStyle={styles.buttonContent}
               disabled={totalPlayers >= selectedMatch.maxPlayers}
+              icon="account-group"
             >
               {selectedMatch.team1?.name || 'Équipe 1'}
             </Button>
@@ -206,8 +261,9 @@ const MatchDetailsScreen = () => {
               mode="contained"
               onPress={() => handleJoinPress('team2')}
               style={styles.joinButton}
-              buttonColor="#4CAF50"
+              contentStyle={styles.buttonContent}
               disabled={totalPlayers >= selectedMatch.maxPlayers}
+              icon="account-group"
             >
               {selectedMatch.team2?.name || 'Équipe 2'}
             </Button>
@@ -215,69 +271,150 @@ const MatchDetailsScreen = () => {
         </View>
       )}
 
+      {/* Score Section */}
+      {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && (
+        <View style={[styles.scoreSection, { backgroundColor: theme.colors.surface }]}>
+          <View style={styles.scoreContainer}>
+            <View style={styles.teamScore}>
+              <Text variant="titleLarge" style={styles.teamName}>
+                {selectedMatch.team1?.name || 'Équipe 1'}
+              </Text>
+              {isCreator ? (
+                <TouchableOpacity 
+                  onPress={handleScorePress}
+                >
+                  <Text variant="displayMedium" style={styles.scoreText}>
+                    {selectedMatch.team1?.score || 0}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text variant="displayMedium" style={styles.scoreText}>
+                  {selectedMatch.team1?.score || 0}
+                </Text>
+              )}
+            </View>
+            
+            <View style={styles.scoreSeparatorContainer}>
+              <Text variant="displayMedium" style={styles.scoreSeparator}>-</Text>
+            </View>
+            
+            <View style={styles.teamScore}>
+              <Text variant="titleLarge" style={styles.teamName}>
+                {selectedMatch.team2?.name || 'Équipe 2'}
+              </Text>
+              {isCreator ? (
+                <TouchableOpacity 
+                  onPress={handleScorePress}
+                >
+                  <Text variant="displayMedium" style={styles.scoreText}>
+                    {selectedMatch.team2?.score || 0}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text variant="displayMedium" style={styles.scoreText}>
+                  {selectedMatch.team2?.score || 0}
+                </Text>
+              )}
+            </View>
+          </View>
+          
+          {isCreator && (
+            <Text style={[styles.editHint, { color: theme.colors.primary }]}>
+              Appuyez sur un score pour le modifier
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Teams Section */}
       <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
-          Équipes ({totalPlayers}/{selectedMatch.maxPlayers})
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+          Équipes
         </Text>
+        
         <View style={styles.teamsContainer}>
-          <View style={styles.teamSection}>
+          {/* Team 1 */}
+          <View style={[styles.teamCard, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.teamHeader}>
-              <Text style={styles.teamTitle}>{selectedMatch.team1?.name || 'Équipe 1'}</Text>
+              <View style={styles.teamTitleContainer}>
+                <MaterialCommunityIcons name="account-group" size={20} color={theme.colors.primary} />
+                <Text variant="titleMedium" style={[styles.teamTitle, { color: theme.colors.primary }]}>
+                  {selectedMatch.team1?.name || 'Équipe 1'}
+                </Text>
+              </View>
+              
               {isParticipant && selectedMatch.team1?.players.some(p => p.player.id === user?.id) && (
                 <Button
                   mode="contained"
                   onPress={handleLeaveMatch}
                   style={styles.leaveButton}
-                  buttonColor="#ff4444"
+                  contentStyle={styles.buttonContent}
+                  icon="exit-to-app"
+                  buttonColor={theme.colors.error}
                 >
                   Quitter
                 </Button>
               )}
             </View>
+            
+            <Divider style={styles.divider} />
+            
             <View style={styles.participantsList}>
               {selectedMatch.team1?.players.map((teamPlayer) => (
                 <View key={teamPlayer.player.id} style={styles.participantItem}>
-                  <TouchableOpacity 
-                    onPress={() => handlePlayerPress(teamPlayer.player.id)}
-                    style={styles.participantTouchable}
-                  >
-                    <Avatar.Image
-                      size={40}
-                      source={
-                        teamPlayer.player.profileImage
-                          ? { uri: config.serverUrl + teamPlayer.player.profileImage }
-                          : require('../../../assets/default-avatar.png')
-                      }
-                    />
+                  <View style={styles.participantTouchable}>
+                    <TouchableOpacity onPress={() => handlePlayerPress(teamPlayer.player.id)}>
+                      <Avatar.Image
+                        size={48}
+                        source={
+                          teamPlayer.player.profileImage
+                            ? { uri: config.serverUrl + teamPlayer.player.profileImage }
+                            : require('../../../assets/default-avatar.png')
+                        }
+                      />
+                    </TouchableOpacity>
                     <View style={styles.participantInfo}>
-                      <Text style={styles.participantName}>
+                      <Text style={[styles.participantName, { color: theme.colors.onSurface }]}>
                         {teamPlayer.player.firstName} {teamPlayer.player.lastName}
                       </Text>
-                      {teamPlayer.isCaptain && (
-                        <Text style={styles.captainText}>Capitaine</Text>
-                      )}
-                      {selectedMatch.status === 'completed' && teamPlayer.stats && (
-                        <View style={styles.statsContainer}>
-                          <Text style={styles.statsText}>
-                            {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
-                          </Text>
-                        </View>
-                      )}
+                      
+                      <View style={styles.participantMeta}>
+                        {teamPlayer.isCaptain && (
+                          <View style={styles.captainBadge}>
+                            <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
+                            <Text style={styles.captainText}>Capitaine</Text>
+                          </View>
+                        )}
+                        
+                        {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && teamPlayer.stats && (
+                          <TouchableOpacity 
+                            onPress={() => handleStatsPress(
+                              teamPlayer.player.id, 
+                              'team1', 
+                              teamPlayer.player.firstName, 
+                              teamPlayer.player.lastName
+                            )}
+                          >
+                            <View style={styles.statsBadge}>
+                              <MaterialCommunityIcons name="soccer" size={14} color="#FFF" />
+                              <Text style={styles.statsText}>
+                                {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
-                  </TouchableOpacity>
-                  {user?.id === selectedMatch.creator.id && (
+                  </View>
+                  
+                  {(isCreator || (isParticipant && teamPlayer.player.id === user?.id)) && (
                     <View style={styles.playerActions}>
-                      <IconButton
-                        icon={teamPlayer.isCaptain ? "star" : "star-outline"}
-                        size={20}
-                        onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team1')}
-                        iconColor={teamPlayer.isCaptain ? "#FFD700" : "#666"}
-                      />
-                      {selectedMatch.status === 'completed' && (
+                      {isCreator && (
                         <IconButton
-                          icon="pencil"
+                          icon={teamPlayer.isCaptain ? "crown" : "crown-outline"}
                           size={20}
-                          onPress={() => handleEditStats(teamPlayer.player.id, 'team1')}
+                          onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team1')}
+                          iconColor={teamPlayer.isCaptain ? "#FFD700" : theme.colors.onSurface}
                         />
                       )}
                     </View>
@@ -286,65 +423,89 @@ const MatchDetailsScreen = () => {
               ))}
             </View>
           </View>
-
-          <View style={styles.teamSection}>
+          
+          {/* Team 2 */}
+          <View style={[styles.teamCard, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.teamHeader}>
-              <Text style={styles.teamTitle}>{selectedMatch.team2?.name || 'Équipe 2'}</Text>
+              <View style={styles.teamTitleContainer}>
+                <MaterialCommunityIcons name="account-group" size={20} color={theme.colors.primary} />
+                <Text variant="titleMedium" style={[styles.teamTitle, { color: theme.colors.primary }]}>
+                  {selectedMatch.team2?.name || 'Équipe 2'}
+                </Text>
+              </View>
+              
               {isParticipant && selectedMatch.team2?.players.some(p => p.player.id === user?.id) && (
                 <Button
                   mode="contained"
                   onPress={handleLeaveMatch}
                   style={styles.leaveButton}
-                  buttonColor="#ff4444"
+                  contentStyle={styles.buttonContent}
+                  icon="exit-to-app"
+                  buttonColor={theme.colors.error}
                 >
                   Quitter
                 </Button>
               )}
             </View>
+            
+            <Divider style={styles.divider} />
+            
             <View style={styles.participantsList}>
               {selectedMatch.team2?.players.map((teamPlayer) => (
                 <View key={teamPlayer.player.id} style={styles.participantItem}>
-                  <TouchableOpacity 
-                    onPress={() => handlePlayerPress(teamPlayer.player.id)}
-                    style={styles.participantTouchable}
-                  >
-                    <Avatar.Image
-                      size={40}
-                      source={
-                        teamPlayer.player.profileImage
-                          ? { uri: config.serverUrl + teamPlayer.player.profileImage }
-                          : require('../../../assets/default-avatar.png')
-                      }
-                    />
+                  <View style={styles.participantTouchable}>
+                    <TouchableOpacity onPress={() => handlePlayerPress(teamPlayer.player.id)}>
+                      <Avatar.Image
+                        size={48}
+                        source={
+                          teamPlayer.player.profileImage
+                            ? { uri: config.serverUrl + teamPlayer.player.profileImage }
+                            : require('../../../assets/default-avatar.png')
+                        }
+                      />
+                    </TouchableOpacity>
                     <View style={styles.participantInfo}>
-                      <Text style={styles.participantName}>
+                      <Text style={[styles.participantName, { color: theme.colors.onSurface }]}>
                         {teamPlayer.player.firstName} {teamPlayer.player.lastName}
                       </Text>
-                      {teamPlayer.isCaptain && (
-                        <Text style={styles.captainText}>Capitaine</Text>
-                      )}
-                      {selectedMatch.status === 'completed' && teamPlayer.stats && (
-                        <View style={styles.statsContainer}>
-                          <Text style={styles.statsText}>
-                            {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
-                          </Text>
-                        </View>
-                      )}
+                      
+                      <View style={styles.participantMeta}>
+                        {teamPlayer.isCaptain && (
+                          <View style={styles.captainBadge}>
+                            <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
+                            <Text style={styles.captainText}>Capitaine</Text>
+                          </View>
+                        )}
+                        
+                        {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && teamPlayer.stats && (
+                          <TouchableOpacity 
+                            onPress={() => handleStatsPress(
+                              teamPlayer.player.id, 
+                              'team2', 
+                              teamPlayer.player.firstName, 
+                              teamPlayer.player.lastName
+                            )}
+                          >
+                            <View style={styles.statsBadge}>
+                              <MaterialCommunityIcons name="soccer" size={14} color="#FFF" />
+                              <Text style={styles.statsText}>
+                                {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
-                  </TouchableOpacity>
-                  {user?.id === selectedMatch.creator.id && (
+                  </View>
+                  
+                  {(isCreator || (isParticipant && teamPlayer.player.id === user?.id)) && (
                     <View style={styles.playerActions}>
-                      <IconButton
-                        icon={teamPlayer.isCaptain ? "star" : "star-outline"}
-                        size={20}
-                        onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team2')}
-                        iconColor={teamPlayer.isCaptain ? "#FFD700" : "#666"}
-                      />
-                      {selectedMatch.status === 'completed' && (
+                      {isCreator && (
                         <IconButton
-                          icon="pencil"
+                          icon={teamPlayer.isCaptain ? "crown" : "crown-outline"}
                           size={20}
-                          onPress={() => handleEditStats(teamPlayer.player.id, 'team2')}
+                          onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team2')}
+                          iconColor={teamPlayer.isCaptain ? "#FFD700" : theme.colors.onSurface}
                         />
                       )}
                     </View>
@@ -356,61 +517,63 @@ const MatchDetailsScreen = () => {
         </View>
       </View>
 
-      {selectedMatch.status === 'completed' && (
-        <View style={styles.section}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            Score final
-          </Text>
-          <View style={styles.scoreContainer}>
-            <Text style={styles.scoreText}>
-              {selectedMatch.team1?.score || 0} - {selectedMatch.team2?.score || 0}
-            </Text>
-            {user?.id === selectedMatch.creator.id && (
-              <Button
-                mode="outlined"
-                onPress={() => setScoreModalVisible(true)}
-                style={styles.editScoreButton}
-              >
-                Modifier le score
-              </Button>
-            )}
-          </View>
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
+      {/* Match Info Section */}
+      <View style={[styles.infoSection, { backgroundColor: theme.colors.surface }]}>
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
           Informations
         </Text>
-        <Text style={styles.infoText}>
-          Créé par : {selectedMatch.creator.firstName} {selectedMatch.creator.lastName}
-        </Text>
+        
+        <View style={styles.infoItem}>
+          <MaterialCommunityIcons name="account" size={20} color={theme.colors.onSurface} />
+          <Text style={[styles.infoText, { color: theme.colors.onSurface }]}>
+            Créé par : {selectedMatch.creator.firstName} {selectedMatch.creator.lastName}
+          </Text>
+        </View>
+        
+        <View style={styles.infoItem}>
+          <MaterialCommunityIcons name="map-marker" size={20} color={theme.colors.onSurface} />
+          <Text style={[styles.infoText, { color: theme.colors.onSurface }]}>
+            Lieu : {selectedMatch.field.address}
+          </Text>
+        </View>
       </View>
 
+      {/* Join Modal */}
       <Modal
         visible={joinModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setJoinModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rejoindre le match</Text>
-            <Text style={styles.modalText}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
+            <MaterialCommunityIcons 
+              name="account-group" 
+              size={48} 
+              color={theme.colors.primary} 
+              style={styles.modalIcon}
+            />
+            <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
+              Rejoindre le match
+            </Text>
+            <Text variant="bodyMedium" style={[styles.modalText, { color: theme.colors.onSurface }]}>
               Voulez-vous rejoindre {selectedTeam === 'team1' ? selectedMatch.team1?.name || 'Équipe 1' : selectedMatch.team2?.name || 'Équipe 2'} ?
             </Text>
+            
             <View style={styles.modalButtons}>
               <Button
                 mode="outlined"
                 onPress={() => setJoinModalVisible(false)}
                 style={styles.modalButton}
+                contentStyle={styles.buttonContent}
               >
                 Annuler
               </Button>
               <Button
                 mode="contained"
                 onPress={handleConfirmJoin}
-                style={[styles.modalButton, styles.confirmButton]}
+                style={styles.modalButton}
+                contentStyle={styles.buttonContent}
               >
                 Confirmer
               </Button>
@@ -419,95 +582,184 @@ const MatchDetailsScreen = () => {
         </View>
       </Modal>
 
+      {/* Score Modal */}
       <Modal
         visible={scoreModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setScoreModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Modifier le score</Text>
-            <View style={styles.scoreInputs}>
-              <TextInput
-                label="Score Équipe 1"
-                value={String(selectedMatch.team1?.score || 0)}
-                onChangeText={(text) => setTeam1Score(parseInt(text) || 0)}
-                keyboardType="numeric"
-                style={styles.scoreInput}
-              />
-              <Text style={styles.scoreSeparator}>-</Text>
-              <TextInput
-                label="Score Équipe 2"
-                value={String(selectedMatch.team2?.score || 0)}
-                onChangeText={(text) => setTeam2Score(parseInt(text) || 0)}
-                keyboardType="numeric"
-                style={styles.scoreInput}
-              />
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
+            <MaterialCommunityIcons 
+              name="scoreboard" 
+              size={48} 
+              color={theme.colors.primary} 
+              style={styles.modalIcon}
+            />
+            <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
+              Modifier le score
+            </Text>
+            
+            <View style={styles.scoreInputContainer}>
+              <View style={styles.scoreInputWrapper}>
+                <TextInput
+                  label={selectedMatch.team1?.name || 'Équipe 1'}
+                  value={String(team1Score)}
+                  onChangeText={(text) => setTeam1Score(parseInt(text) || 0)}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={styles.scoreInput}
+                  theme={{ colors: { primary: theme.colors.primary } }}
+                />
+              </View>
+              
+              <Text variant="displayMedium" style={[styles.scoreSeparator, { color: theme.colors.onSurface }]}>
+                -
+              </Text>
+              
+              <View style={styles.scoreInputWrapper}>
+                <TextInput
+                  label={selectedMatch.team2?.name || 'Équipe 2'}
+                  value={String(team2Score)}
+                  onChangeText={(text) => setTeam2Score(parseInt(text) || 0)}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={styles.scoreInput}
+                  theme={{ colors: { primary: theme.colors.primary } }}
+                />
+              </View>
             </View>
+            
             <View style={styles.modalButtons}>
               <Button
                 mode="outlined"
                 onPress={() => setScoreModalVisible(false)}
                 style={styles.modalButton}
+                contentStyle={styles.buttonContent}
               >
                 Annuler
               </Button>
               <Button
                 mode="contained"
                 onPress={handleUpdateScore}
-                style={[styles.modalButton, styles.confirmButton]}
+                style={styles.modalButton}
+                contentStyle={styles.buttonContent}
               >
-                Confirmer
+                Enregistrer
               </Button>
             </View>
           </View>
         </View>
       </Modal>
 
+      {/* Stats Modal */}
       <Modal
         visible={statsModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setStatsModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Modifier les statistiques</Text>
-            <View style={styles.statsInputs}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
+            <MaterialCommunityIcons 
+              name="chart-box" 
+              size={48} 
+              color={theme.colors.primary} 
+              style={styles.modalIcon}
+            />
+            <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
+              Statistiques de {selectedPlayerName}
+            </Text>
+            
+            <View style={styles.statsInputContainer}>
               <TextInput
-                label="Buts"
-                value={String(selectedPlayerStats?.goals || 0)}
-                onChangeText={(text) => setSelectedPlayerStats(prev => prev ? { ...prev, goals: parseInt(text) || 0 } : null)}
+                label="Buts marqués"
+                value={String(selectedPlayerStats.goals)}
+                onChangeText={(text) => setSelectedPlayerStats(prev => ({ ...prev, goals: parseInt(text) || 0 }))}
                 keyboardType="numeric"
+                mode="outlined"
+                left={<TextInput.Icon icon="soccer" />}
                 style={styles.statsInput}
+                theme={{ colors: { primary: theme.colors.primary } }}
               />
+              
               <TextInput
                 label="Passes décisives"
-                value={String(selectedPlayerStats?.assists || 0)}
-                onChangeText={(text) => setSelectedPlayerStats(prev => prev ? { ...prev, assists: parseInt(text) || 0 } : null)}
+                value={String(selectedPlayerStats.assists)}
+                onChangeText={(text) => setSelectedPlayerStats(prev => ({ ...prev, assists: parseInt(text) || 0 }))}
                 keyboardType="numeric"
+                mode="outlined"
+                left={<TextInput.Icon icon="handshake" />}
                 style={styles.statsInput}
+                theme={{ colors: { primary: theme.colors.primary } }}
               />
             </View>
+            
             <View style={styles.modalButtons}>
               <Button
                 mode="outlined"
                 onPress={() => setStatsModalVisible(false)}
                 style={styles.modalButton}
+                contentStyle={styles.buttonContent}
               >
                 Annuler
               </Button>
               <Button
                 mode="contained"
                 onPress={handleUpdateStats}
-                style={[styles.modalButton, styles.confirmButton]}
+                style={styles.modalButton}
+                contentStyle={styles.buttonContent}
               >
-                Confirmer
+                Enregistrer
               </Button>
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Alert Modal */}
+      <Modal
+        visible={alertModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertModalVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setAlertModalVisible(false)}
+        >
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
+              <MaterialCommunityIcons 
+                name="alert-circle" 
+                size={48} 
+                color={theme.colors.error} 
+                style={styles.modalIcon}
+              />
+              <Text variant="titleLarge" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>
+                Accès restreint
+              </Text>
+              <Text variant="bodyMedium" style={[styles.modalText, { color: theme.colors.onSurface }]}>
+                {alertMessage}
+              </Text>
+              <View style={styles.modalButtons}>
+                <Button
+                  mode="contained"
+                  onPress={() => setAlertModalVisible(false)}
+                  style={styles.modalButton}
+                  contentStyle={styles.buttonContent}
+                >
+                  OK
+                </Button>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </ScrollView>
   );
@@ -516,139 +768,247 @@ const MatchDetailsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   header: {
-    backgroundColor: '#fff',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  title: {
-    color: '#4CAF50',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#666',
-  },
-  section: {
-    backgroundColor: '#fff',
-    marginTop: 20,
-    padding: 20,
-    borderRadius: 8,
-    marginHorizontal: 15,
-  },
-  sectionTitle: {
-    color: '#4CAF50',
-    marginBottom: 15,
-  },
-  participantsList: {
-    marginTop: 10,
-  },
-  participantItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: '#f8f8f8',
-    padding: 8,
-    borderRadius: 8,
-  },
-  participantName: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#333',
-  },
-  infoText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#333',
-  },
-  actions: {
-    padding: 20,
-  },
-  actionButton: {
-    borderRadius: 8,
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    elevation: 2,
     marginBottom: 16,
   },
-  retryButton: {
+  headerContent: {
+    marginBottom: 16,
+  },
+  matchInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
-    borderRadius: 8,
+  },
+  title: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitle: {
+    marginLeft: 8,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginTop: 8,
+  },
+  statusText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   joinSection: {
-    backgroundColor: '#fff',
-    padding: 20,
-    marginTop: 20,
-    marginHorizontal: 15,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
     elevation: 2,
   },
   joinTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#4CAF50',
-    marginBottom: 15,
+    fontWeight: 'bold',
+    marginBottom: 12,
     textAlign: 'center',
   },
   joinButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 12,
   },
   joinButton: {
     flex: 1,
     borderRadius: 8,
   },
+  section: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  teamsContainer: {
+    gap: 16,
+  },
+  teamCard: {
+    borderRadius: 12,
+    padding: 16,
+    elevation: 1,
+  },
   teamHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  teamTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  teamTitle: {
+    fontWeight: 'bold',
+  },
+  divider: {
+    marginVertical: 8,
+    height: 1,
+  },
+  participantsList: {
+    marginTop: 8,
+  },
+  participantItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    padding: 8,
+    borderRadius: 8,
+  },
+  participantTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  participantInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  participantName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  participantMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  captainBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    gap: 4,
+  },
+  captainText: {
+    fontSize: 12,
+    color: '#FFD700',
+  },
+  statsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  statsText: {
+    fontSize: 12,
+    color: '#FFF',
+  },
+  playerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   leaveButton: {
     borderRadius: 8,
-    paddingHorizontal: 12,
   },
-  teamSection: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    elevation: 1,
+  scoreSection: {
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    elevation: 2,
   },
-  teamTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#4CAF50',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  scoreContainer: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
     marginBottom: 16,
   },
-  modalText: {
+  teamScore: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  teamName: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  scoreText: {
+    fontWeight: 'bold',
+  },
+  scoreSeparatorContainer: {
+    width: 40,
+    alignItems: 'center',
+  },
+  scoreSeparator: {
+    fontWeight: 'bold',
+  },
+  editHint: {
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  infoSection: {
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    elevation: 1,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  infoText: {
     fontSize: 16,
+  },
+  errorText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    borderRadius: 8,
+  },
+  buttonContent: {
+    height: 44,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalText: {
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -656,104 +1016,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    marginTop: 16,
   },
   modalButton: {
     flex: 1,
     marginHorizontal: 8,
+    borderRadius: 8,
   },
-  confirmButton: {
-    backgroundColor: '#4CAF50',
-  },
-  teamsContainer: {
-    marginTop: 10,
-  },
-  participantInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  captainText: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-    marginTop: 2,
-  },
-  statusContainer: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  statusupcoming: {
-    backgroundColor: '#4CAF50',
-  },
-  statusin_progress: {
-    backgroundColor: '#FFA000',
-  },
-  statuscompleted: {
-    backgroundColor: '#2196F3',
-  },
-  statuscancelled: {
-    backgroundColor: '#F44336',
-  },
-  statusText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  playerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statsContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 4,
-  },
-  statsText: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  scoreContainer: {
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  scoreText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  editScoreButton: {
-    marginTop: 10,
-  },
-  scoreInputs: {
+  scoreInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 20,
+    width: '100%',
+    marginVertical: 16,
+  },
+  scoreInputWrapper: {
+    flex: 1,
   },
   scoreInput: {
-    width: 100,
     textAlign: 'center',
   },
-  scoreSeparator: {
-    fontSize: 24,
-    marginHorizontal: 20,
-  },
-  statsInputs: {
-    marginVertical: 20,
+  statsInputContainer: {
+    width: '100%',
+    marginVertical: 16,
+    gap: 16,
   },
   statsInput: {
-    marginBottom: 10,
-  },
-  participantTouchable: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '100%',
   },
 });
 
-export default MatchDetailsScreen; 
+export default MatchDetailsScreen;
