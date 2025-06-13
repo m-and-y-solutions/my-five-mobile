@@ -97,7 +97,8 @@ export const updatePlayerStats = createAsyncThunk(
   async ({ matchId, playerId, team, stats }: UpdatePlayerStatsParams) => {
     const response = await matchService.updatePlayerStats(matchId, {
       playerId,
-      ...stats
+      team,
+      stats
     });
     return response;
   }

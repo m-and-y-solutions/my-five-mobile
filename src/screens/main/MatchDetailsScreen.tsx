@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, ViewStyle, TouchableOpacity, Dimensions } from 'react-native';
-import { Text, Button, useTheme, ActivityIndicator, Avatar, IconButton, TextInput, Divider } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, ViewStyle, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { Text, Button, useTheme, ActivityIndicator, Avatar, IconButton, TextInput, Divider, Chip, Menu } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -10,6 +10,8 @@ import { RootState, AppDispatch } from '../../store';
 import { fetchMatchById, joinMatch, leaveMatch, updateCaptain, updatePlayerStats, updateMatchScore } from '../../store/slices/matchSlice';
 import config from '../../config/config';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
@@ -20,7 +22,7 @@ const MatchDetailsScreen = () => {
   const route = useRoute<MatchDetailsScreenRouteProp>();
   const navigation = useNavigation<MatchDetailsScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-  const { selectedMatch, loading, error } = useSelector((state: RootState) => state.match);
+  const { selectedMatch, error } = useSelector((state: RootState) => state.match);
   const { user } = useSelector((state: RootState) => state.auth);
   const [refreshing, setRefreshing] = useState(false);
   const [joinModalVisible, setJoinModalVisible] = useState(false);
@@ -29,12 +31,24 @@ const MatchDetailsScreen = () => {
   const [statsModalVisible, setStatsModalVisible] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [selectedPlayerStats, setSelectedPlayerStats] = useState<{ goals: number; assists: number }>({ goals: 0, assists: 0 });
+  const [selectedPlayerStats, setSelectedPlayerStats] = useState<{ 
+    goals: number; 
+    assists: number;
+    yellowCards: number;
+    redCards: number;
+  }>({ 
+    goals: 0, 
+    assists: 0,
+    yellowCards: 0,
+    redCards: 0 
+  });
   const [team1Score, setTeam1Score] = useState(0);
   const [team2Score, setTeam2Score] = useState(0);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedPlayerTeam, setSelectedPlayerTeam] = useState<'team1' | 'team2' | null>(null);
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
+  const [statusMenuVisible, setStatusMenuVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
@@ -105,7 +119,7 @@ const MatchDetailsScreen = () => {
     setSelectedPlayerId(playerId);
     setSelectedPlayerTeam(team);
     setSelectedPlayerName(`${firstName} ${lastName}`);
-    setSelectedPlayerStats(player?.stats || { goals: 0, assists: 0 });
+    setSelectedPlayerStats(player?.stats || { goals: 0, assists: 0, yellowCards: 0, redCards: 0 });
     setStatsModalVisible(true);
   };
 
@@ -165,6 +179,71 @@ const MatchDetailsScreen = () => {
     }
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) return;
+
+      const response = await axios.patch(
+        `${config.apiUrl}/matches/${selectedMatch?.id}`,
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      await dispatch(fetchMatchById(selectedMatch?.id || ''));
+      setStatusMenuVisible(false);
+    } catch (error) {
+      console.error('Error updating match status:', error);
+      Alert.alert('Erreur', 'Impossible de mettre à jour le statut du match');
+    }
+  };
+
+  const getStatusOptions = () => {
+    switch (selectedMatch?.status) {
+      case 'upcoming':
+        return [
+          { label: 'En cours', value: 'ongoing' },
+          { label: 'Terminé', value: 'completed' }
+        ];
+      case 'ongoing':
+        return [
+          { label: 'Terminé', value: 'completed' }
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'upcoming':
+        return '#4CAF50';
+      case 'in_progress':
+        return '#FFA000';
+      case 'completed':
+        return '#F44336';
+      default:
+        return '#757575';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'upcoming':
+        return 'À venir';
+      case 'in_progress':
+        return 'En cours';
+      case 'completed':
+        return 'Terminé';
+      default:
+        return status;
+    }
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
@@ -216,11 +295,52 @@ const MatchDetailsScreen = () => {
       }
     >
       {/* Header Section */}
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.header, { backgroundColor: "#4CAF5020" }]}>
         <View style={styles.headerContent}>
-          <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.primary }]}>
+          <Text variant="headlineSmall" style={[styles.headerTitle, { color: "#000000" }]}>
             {selectedMatch.field.name}
           </Text>
+          <View style={styles.headerActions}>
+            {isCreator && selectedMatch?.status !== 'completed' && (
+              <Menu
+                visible={statusMenuVisible}
+                onDismiss={() => setStatusMenuVisible(false)}
+                anchor={
+                  <Button
+                    mode="outlined"
+                    onPress={() => setStatusMenuVisible(true)}
+                    style={[styles.statusButton, { 
+                      backgroundColor: '#FFFFFF',
+                      borderColor: '#4CAF50',
+                    }]}
+                    textColor="#4CAF50"
+                    icon="chevron-down"
+                  >
+                    {getStatusLabel(selectedMatch?.status || '')}
+                  </Button>
+                }
+              >
+                {getStatusOptions().map((option) => (
+                  <Menu.Item
+                    key={option.value}
+                    onPress={() => handleStatusChange(option.value)}
+                    title={option.label}
+                  />
+                ))}
+              </Menu>
+            )}
+            <View style={styles.statusContainer}>
+              <Text variant="bodySmall" style={[styles.statusLabel, { color: theme.colors.onSurface }]}>
+                Statut actuel:
+              </Text>
+              <Chip
+                style={[styles.statusChip, { backgroundColor: getStatusColor(selectedMatch?.status || '') }]}
+                textStyle={{ color: '#FFFFFF' }}
+              >
+                {getStatusLabel(selectedMatch?.status || '')}
+              </Chip>
+            </View>
+          </View>
           <View style={styles.matchInfoRow}>
             <MaterialCommunityIcons name="calendar" size={16} color={theme.colors.onSurface} />
             <Text variant="bodyMedium" style={[styles.subtitle, { color: theme.colors.onSurface }]}>
@@ -234,36 +354,36 @@ const MatchDetailsScreen = () => {
             </Text>
           </View>
         </View>
-        
-        <View style={[styles.statusBadge, { backgroundColor: statusColors[selectedMatch.status] }]}>
-          <Text style={styles.statusText}>{statusText[selectedMatch.status]}</Text>
-        </View>
       </View>
 
       {/* Join Section */}
       {user && !isParticipant && selectedMatch.status === 'upcoming' && (
         <View style={[styles.joinSection, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="titleMedium" style={[styles.joinTitle, { color: theme.colors.primary }]}>
+          <Text variant="titleLarge" style={[styles.joinTitle, { color: "#000000" }]}>
             Rejoindre une équipe
           </Text>
           <View style={styles.joinButtons}>
             <Button
               mode="contained"
               onPress={() => handleJoinPress('team1')}
-              style={styles.joinButton}
+              style={[styles.joinButton, { backgroundColor: '#4CAF50' }]}
               contentStyle={styles.buttonContent}
               disabled={totalPlayers >= selectedMatch.maxPlayers}
-              icon="account-group"
+              icon={({ size, color }) => (
+                <MaterialCommunityIcons name="account-group" size={size} color="#FFFFFF" />
+              )}
             >
               {selectedMatch.team1?.name || 'Équipe 1'}
             </Button>
             <Button
               mode="contained"
               onPress={() => handleJoinPress('team2')}
-              style={styles.joinButton}
+              style={[styles.joinButton, { backgroundColor: '#4CAF50' }]}
               contentStyle={styles.buttonContent}
               disabled={totalPlayers >= selectedMatch.maxPlayers}
-              icon="account-group"
+              icon={({ size, color }) => (
+                <MaterialCommunityIcons name="account-group" size={size} color="#FFFFFF" />
+              )}
             >
               {selectedMatch.team2?.name || 'Équipe 2'}
             </Button>
@@ -328,7 +448,7 @@ const MatchDetailsScreen = () => {
 
       {/* Teams Section */}
       <View style={styles.section}>
-        <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
           Équipes
         </Text>
         
@@ -337,13 +457,13 @@ const MatchDetailsScreen = () => {
           <View style={[styles.teamCard, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.teamHeader}>
               <View style={styles.teamTitleContainer}>
-                <MaterialCommunityIcons name="account-group" size={20} color={theme.colors.primary} />
-                <Text variant="titleMedium" style={[styles.teamTitle, { color: theme.colors.primary }]}>
+                <MaterialCommunityIcons name="account-group" size={20} color="#4CAF50" />
+                <Text variant="titleMedium" style={[styles.teamTitle, { color: "#000000" }]}>
                   {selectedMatch.team1?.name || 'Équipe 1'}
                 </Text>
               </View>
               
-              {isParticipant && selectedMatch.team1?.players.some(p => p.player.id === user?.id) && (
+              {isParticipant && selectedMatch.team1?.players.some(p => p.player.id === user?.id) && selectedMatch.status === 'upcoming' && (
                 <Button
                   mode="contained"
                   onPress={handleLeaveMatch}
@@ -360,67 +480,78 @@ const MatchDetailsScreen = () => {
             <Divider style={styles.divider} />
             
             <View style={styles.participantsList}>
-              {selectedMatch.team1?.players.map((teamPlayer) => (
-                <View key={teamPlayer.player.id} style={styles.participantItem}>
-                  <View style={styles.participantTouchable}>
-                    <TouchableOpacity onPress={() => handlePlayerPress(teamPlayer.player.id)}>
-                      <Avatar.Image
-                        size={48}
-                        source={
-                          teamPlayer.player.profileImage
-                            ? { uri: config.serverUrl + teamPlayer.player.profileImage }
-                            : require('../../../assets/default-avatar.png')
-                        }
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.participantInfo}>
-                      <Text style={[styles.participantName, { color: theme.colors.onSurface }]}>
-                        {teamPlayer.player.firstName} {teamPlayer.player.lastName}
-                      </Text>
-                      
-                      <View style={styles.participantMeta}>
-                        {teamPlayer.isCaptain && (
-                          <View style={styles.captainBadge}>
-                            <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
-                            <Text style={styles.captainText}>Capitaine</Text>
-                          </View>
-                        )}
+              {selectedMatch.team1?.players.length ? (
+                selectedMatch.team1?.players.map((teamPlayer) => (
+                  <View key={teamPlayer.player.id} style={styles.participantItem}>
+                    <View style={styles.participantTouchable}>
+                      <TouchableOpacity onPress={() => handlePlayerPress(teamPlayer.player.id)}>
+                        <Avatar.Image
+                          size={48}
+                          source={
+                            teamPlayer.player.profileImage
+                              ? { uri: config.serverUrl + teamPlayer.player.profileImage }
+                              : require('../../../assets/default-avatar.png')
+                          }
+                        />
+                      </TouchableOpacity>
+                      <View style={styles.participantInfo}>
+                        <Text style={[styles.participantName, { color: theme.colors.onSurface }]}>
+                          {teamPlayer.player.firstName} {teamPlayer.player.lastName}
+                        </Text>
                         
-                        {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && teamPlayer.stats && (
-                          <TouchableOpacity 
-                            onPress={() => handleStatsPress(
-                              teamPlayer.player.id, 
-                              'team1', 
-                              teamPlayer.player.firstName, 
-                              teamPlayer.player.lastName
-                            )}
-                          >
-                            <View style={styles.statsBadge}>
-                              <MaterialCommunityIcons name="soccer" size={14} color="#FFF" />
-                              <Text style={styles.statsText}>
-                                {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
-                              </Text>
+                        <View style={styles.participantMeta}>
+                          {teamPlayer.isCaptain && (
+                            <View style={styles.captainBadge}>
+                              <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
+                              <Text style={styles.captainText}>Capitaine</Text>
                             </View>
-                          </TouchableOpacity>
-                        )}
+                          )}
+                          
+                          {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && teamPlayer.stats && (
+                            <TouchableOpacity 
+                              onPress={() => handleStatsPress(
+                                teamPlayer.player.id, 
+                                'team1', 
+                                teamPlayer.player.firstName, 
+                                teamPlayer.player.lastName
+                              )}
+                            >
+                              <View style={styles.statsBadge}>
+                                <MaterialCommunityIcons name="soccer" size={14} color="#FFF" />
+                                <Text style={styles.statsText}>
+                                  {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+                                  {teamPlayer.stats.yellowCards > 0 && ` 🟨${teamPlayer.stats.yellowCards}`}
+                                  {teamPlayer.stats.redCards > 0 && ` 🟥${teamPlayer.stats.redCards}`}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
                     </View>
+                    
+                    {(isCreator || (isParticipant && teamPlayer.player.id === user?.id)) && (
+                      <View style={styles.playerActions}>
+                        {isCreator && (
+                          <IconButton
+                            icon={teamPlayer.isCaptain ? "crown" : "crown-outline"}
+                            size={20}
+                            onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team1')}
+                            iconColor={teamPlayer.isCaptain ? "#FFD700" : theme.colors.onSurface}
+                          />
+                        )}
+                      </View>
+                    )}
                   </View>
-                  
-                  {(isCreator || (isParticipant && teamPlayer.player.id === user?.id)) && (
-                    <View style={styles.playerActions}>
-                      {isCreator && (
-                        <IconButton
-                          icon={teamPlayer.isCaptain ? "crown" : "crown-outline"}
-                          size={20}
-                          onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team1')}
-                          iconColor={teamPlayer.isCaptain ? "#FFD700" : theme.colors.onSurface}
-                        />
-                      )}
-                    </View>
-                  )}
+                ))
+              ) : (
+                <View style={styles.emptyTeam}>
+                  <MaterialCommunityIcons name="account-group-outline" size={24} color="#4CAF50" />
+                  <Text style={[styles.emptyTeamText, { color: theme.colors.onSurface }]}>
+                    Pas de joueurs pour le moment
+                  </Text>
                 </View>
-              ))}
+              )}
             </View>
           </View>
           
@@ -428,13 +559,13 @@ const MatchDetailsScreen = () => {
           <View style={[styles.teamCard, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.teamHeader}>
               <View style={styles.teamTitleContainer}>
-                <MaterialCommunityIcons name="account-group" size={20} color={theme.colors.primary} />
-                <Text variant="titleMedium" style={[styles.teamTitle, { color: theme.colors.primary }]}>
+                <MaterialCommunityIcons name="account-group" size={20} color="#4CAF50" />
+                <Text variant="titleMedium" style={[styles.teamTitle, { color: "#000000" }]}>
                   {selectedMatch.team2?.name || 'Équipe 2'}
                 </Text>
               </View>
               
-              {isParticipant && selectedMatch.team2?.players.some(p => p.player.id === user?.id) && (
+              {isParticipant && selectedMatch.team2?.players.some(p => p.player.id === user?.id) && selectedMatch.status === 'upcoming' && (
                 <Button
                   mode="contained"
                   onPress={handleLeaveMatch}
@@ -451,67 +582,78 @@ const MatchDetailsScreen = () => {
             <Divider style={styles.divider} />
             
             <View style={styles.participantsList}>
-              {selectedMatch.team2?.players.map((teamPlayer) => (
-                <View key={teamPlayer.player.id} style={styles.participantItem}>
-                  <View style={styles.participantTouchable}>
-                    <TouchableOpacity onPress={() => handlePlayerPress(teamPlayer.player.id)}>
-                      <Avatar.Image
-                        size={48}
-                        source={
-                          teamPlayer.player.profileImage
-                            ? { uri: config.serverUrl + teamPlayer.player.profileImage }
-                            : require('../../../assets/default-avatar.png')
-                        }
-                      />
-                    </TouchableOpacity>
-                    <View style={styles.participantInfo}>
-                      <Text style={[styles.participantName, { color: theme.colors.onSurface }]}>
-                        {teamPlayer.player.firstName} {teamPlayer.player.lastName}
-                      </Text>
-                      
-                      <View style={styles.participantMeta}>
-                        {teamPlayer.isCaptain && (
-                          <View style={styles.captainBadge}>
-                            <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
-                            <Text style={styles.captainText}>Capitaine</Text>
-                          </View>
-                        )}
+              {selectedMatch.team2?.players.length ? (
+                selectedMatch.team2?.players.map((teamPlayer) => (
+                  <View key={teamPlayer.player.id} style={styles.participantItem}>
+                    <View style={styles.participantTouchable}>
+                      <TouchableOpacity onPress={() => handlePlayerPress(teamPlayer.player.id)}>
+                        <Avatar.Image
+                          size={48}
+                          source={
+                            teamPlayer.player.profileImage
+                              ? { uri: config.serverUrl + teamPlayer.player.profileImage }
+                              : require('../../../assets/default-avatar.png')
+                          }
+                        />
+                      </TouchableOpacity>
+                      <View style={styles.participantInfo}>
+                        <Text style={[styles.participantName, { color: theme.colors.onSurface }]}>
+                          {teamPlayer.player.firstName} {teamPlayer.player.lastName}
+                        </Text>
                         
-                        {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && teamPlayer.stats && (
-                          <TouchableOpacity 
-                            onPress={() => handleStatsPress(
-                              teamPlayer.player.id, 
-                              'team2', 
-                              teamPlayer.player.firstName, 
-                              teamPlayer.player.lastName
-                            )}
-                          >
-                            <View style={styles.statsBadge}>
-                              <MaterialCommunityIcons name="soccer" size={14} color="#FFF" />
-                              <Text style={styles.statsText}>
-                                {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
-                              </Text>
+                        <View style={styles.participantMeta}>
+                          {teamPlayer.isCaptain && (
+                            <View style={styles.captainBadge}>
+                              <MaterialCommunityIcons name="crown" size={14} color="#FFD700" />
+                              <Text style={styles.captainText}>Capitaine</Text>
                             </View>
-                          </TouchableOpacity>
-                        )}
+                          )}
+                          
+                          {(selectedMatch.status === 'ongoing' || selectedMatch.status === 'completed') && teamPlayer.stats && (
+                            <TouchableOpacity 
+                              onPress={() => handleStatsPress(
+                                teamPlayer.player.id, 
+                                'team2', 
+                                teamPlayer.player.firstName, 
+                                teamPlayer.player.lastName
+                              )}
+                            >
+                              <View style={styles.statsBadge}>
+                                <MaterialCommunityIcons name="soccer" size={14} color="#FFF" />
+                                <Text style={styles.statsText}>
+                                  {teamPlayer.stats.goals}G {teamPlayer.stats.assists}A
+                                  {teamPlayer.stats.yellowCards > 0 && ` 🟨${teamPlayer.stats.yellowCards}`}
+                                  {teamPlayer.stats.redCards > 0 && ` 🟥${teamPlayer.stats.redCards}`}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
                     </View>
+                    
+                    {(isCreator || (isParticipant && teamPlayer.player.id === user?.id)) && (
+                      <View style={styles.playerActions}>
+                        {isCreator && (
+                          <IconButton
+                            icon={teamPlayer.isCaptain ? "crown" : "crown-outline"}
+                            size={20}
+                            onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team2')}
+                            iconColor={teamPlayer.isCaptain ? "#FFD700" : theme.colors.onSurface}
+                          />
+                        )}
+                      </View>
+                    )}
                   </View>
-                  
-                  {(isCreator || (isParticipant && teamPlayer.player.id === user?.id)) && (
-                    <View style={styles.playerActions}>
-                      {isCreator && (
-                        <IconButton
-                          icon={teamPlayer.isCaptain ? "crown" : "crown-outline"}
-                          size={20}
-                          onPress={() => handleToggleCaptain(teamPlayer.player.id, 'team2')}
-                          iconColor={teamPlayer.isCaptain ? "#FFD700" : theme.colors.onSurface}
-                        />
-                      )}
-                    </View>
-                  )}
+                ))
+              ) : (
+                <View style={styles.emptyTeam}>
+                  <MaterialCommunityIcons name="account-group-outline" size={24} color="#4CAF50" />
+                  <Text style={[styles.emptyTeamText, { color: theme.colors.onSurface }]}>
+                    Pas de joueurs pour le moment
+                  </Text>
                 </View>
-              ))}
+              )}
             </View>
           </View>
         </View>
@@ -519,19 +661,19 @@ const MatchDetailsScreen = () => {
 
       {/* Match Info Section */}
       <View style={[styles.infoSection, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="titleLarge" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+        <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
           Informations
         </Text>
         
         <View style={styles.infoItem}>
-          <MaterialCommunityIcons name="account" size={20} color={theme.colors.onSurface} />
+          <MaterialCommunityIcons name="account" size={20} color="#4CAF50" />
           <Text style={[styles.infoText, { color: theme.colors.onSurface }]}>
             Créé par : {selectedMatch.creator.firstName} {selectedMatch.creator.lastName}
           </Text>
         </View>
         
         <View style={styles.infoItem}>
-          <MaterialCommunityIcons name="map-marker" size={20} color={theme.colors.onSurface} />
+          <MaterialCommunityIcons name="map-marker" size={20} color="#4CAF50" />
           <Text style={[styles.infoText, { color: theme.colors.onSurface }]}>
             Lieu : {selectedMatch.field.address}
           </Text>
@@ -694,6 +836,28 @@ const MatchDetailsScreen = () => {
                 style={styles.statsInput}
                 theme={{ colors: { primary: theme.colors.primary } }}
               />
+
+              <TextInput
+                label="Cartons jaunes"
+                value={String(selectedPlayerStats.yellowCards)}
+                onChangeText={(text) => setSelectedPlayerStats(prev => ({ ...prev, yellowCards: parseInt(text) || 0 }))}
+                keyboardType="numeric"
+                mode="outlined"
+                left={<TextInput.Icon icon="card" color="#FFD700" />}
+                style={styles.statsInput}
+                theme={{ colors: { primary: theme.colors.primary } }}
+              />
+
+              <TextInput
+                label="Cartons rouges"
+                value={String(selectedPlayerStats.redCards)}
+                onChangeText={(text) => setSelectedPlayerStats(prev => ({ ...prev, redCards: parseInt(text) || 0 }))}
+                keyboardType="numeric"
+                mode="outlined"
+                left={<TextInput.Icon icon="card" color="#FF0000" />}
+                style={styles.statsInput}
+                theme={{ colors: { primary: theme.colors.primary } }}
+              />
             </View>
             
             <View style={styles.modalButtons}>
@@ -785,28 +949,28 @@ const styles = StyleSheet.create({
   headerContent: {
     marginBottom: 16,
   },
+  headerTitle: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusButton: {
+    borderRadius: 8,
+  },
+  statusChip: {
+    borderRadius: 8,
+  },
   matchInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8,
   },
-  title: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
   subtitle: {
     marginLeft: 8,
-  },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 8,
-  },
-  statusText: {
-    color: '#fff',
-    fontWeight: '600',
   },
   joinSection: {
     padding: 16,
@@ -1043,6 +1207,25 @@ const styles = StyleSheet.create({
   },
   statsInput: {
     width: '100%',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  statusLabel: {
+    fontSize: 12,
+  },
+  emptyTeam: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    gap: 8,
+  },
+  emptyTeamText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

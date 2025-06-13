@@ -108,10 +108,17 @@ export interface UpdateScoreData {
   team2Score: number;
 }
 
+export interface UserStatsData {
+  goals?: number;
+  assists?: number;
+  yellowCards?: number;
+  redCards?: number;
+}
+
 export interface UpdatePlayerStatsData {
   playerId: string;
-  goals: number;
-  assists: number;
+  team?: string;
+  stats: UserStatsData;
 }
 
 const matchService = {

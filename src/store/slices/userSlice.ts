@@ -1,46 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { User } from '../../types/user.types';
+import { User, UserState } from '../../types/user.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../../config/config';
 
-interface UserStats {
-  totalMatches: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  goalsScored: number;
-  assists: number;
-  ranking: number;
-  winRate: number;
-  averageGoalsPerMatch: number;
-  averageAssistsPerMatch: number;
-  currentStreak: number;
-  bestStreak: number;
-  favoritePosition: string;
-  totalPlayTime: number;
-  achievements: Array<{
-    id: string;
-    title: string;
-    description: string;
-    icon: string;
-    unlockedAt: string;
-  }>;
-}
-
-interface UserSocial {
-  groups: number;
-  following: number;
-  followers: number;
-}
-
-interface UserState {
-  stats: UserStats | null;
-  social: UserSocial | null;
-  loading: boolean;
-  error: string | null;
-  selectedUser: User | null;
-}
 
 const initialState: UserState = {
   stats: null,

@@ -104,6 +104,7 @@ const ProfileScreen = () => {
   }
 
   return (
+    
     <ScrollView
       style={styles.container}
       refreshControl={
@@ -144,16 +145,22 @@ const ProfileScreen = () => {
         </View>
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>{stats?.totalMatches || 0}</Text>
+            <Text variant="titleLarge" style={styles.statValue}>
+              {isCurrentUser ? (stats?.totalMatches || 0) : (selectedUser?.stats?.totalMatches || 0)}
+            </Text>
             <Text variant="bodyMedium" style={styles.statLabel}>Matchs</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>{user.score}</Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Score</Text>
+            <Text variant="titleLarge" style={styles.statValue}>
+              {isCurrentUser ? (stats?.wins || 0) : (selectedUser?.stats?.wins || 0)}
+            </Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Victoires</Text>
           </View>
           <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>{user.ranking}</Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Classement</Text>
+            <Text variant="titleLarge" style={styles.statValue}>
+              {isCurrentUser ? (stats?.goalsScored || 0) : (selectedUser?.stats?.goalsScored || 0)}
+            </Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Buts</Text>
           </View>
         </View>
       </View>
@@ -161,7 +168,7 @@ const ProfileScreen = () => {
       {isCurrentUser && (
         <>
           <View style={styles.section}>
-            <Text variant="titleLarge" style={styles.sectionTitle}>
+            <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
               Informations du profil
             </Text>
             <List.Item
@@ -172,34 +179,39 @@ const ProfileScreen = () => {
             <List.Item
               title="Modifier le profil"
               description="Mettre à jour vos informations personnelles"
+              left={props => <List.Icon {...props} icon="account-edit" color="#4CAF50" />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
             />
             <List.Item
               title="Préférences"
               description="Définir vos préférences de match"
+              left={props => <List.Icon {...props} icon="cog" color="#4CAF50" />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
             />
           </View>
 
           <View style={styles.section}>
-            <Text variant="titleLarge" style={styles.sectionTitle}>
+            <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
               Activité
             </Text>
             <List.Item
               title="Mes matchs"
               description="Voir mes matchs à venir et passés"
+              left={props => <List.Icon {...props} icon="soccer" color="#4CAF50" />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
               onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
             />
             <List.Item
               title="Statistiques"
               description="Voir mes statistiques et réalisations"
+              left={props => <List.Icon {...props} icon="chart-line" color="#4CAF50" />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
               onPress={() => navigation.navigate('UserStats')}
             />
             <List.Item
               title="Groupes"
               description="Gérer vos groupes"
+              left={props => <List.Icon {...props} icon="account-group" color="#4CAF50" />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
             />
           </View>
@@ -224,6 +236,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+
   },
   centerContainer: {
     flex: 1,
