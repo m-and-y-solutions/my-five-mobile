@@ -20,7 +20,7 @@ const slides = [
     id: 2,
     title: 'Communauté',
     description: 'Rejoignez des groupes, suivez d\'autres joueurs et échangez avec eux. Construisez votre réseau sportif !',
-    image: require('../../assets/My-Five-Logo-black.png'),
+    image: require('../../assets/my-five-splash.png'),
   },
   {
     id: 3,
@@ -149,11 +149,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E0D8FF',
+    backgroundColor: '#E0D8FF', // tu peux aussi remplacer ce mauve clair par un vert clair si tu veux
     marginHorizontal: 4,
   },
   paginationDotActive: {
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#4CAF50', // vert à la place de #6B4EFF
     width: 12,
     height: 12,
     borderRadius: 6,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 30,
     borderWidth: 2,
-    borderColor: '#6B4EFF',
+    borderColor: '#4CAF50', // vert à la place de #6B4EFF
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -177,11 +177,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   buttonText: {
-    color: '#6B4EFF',
+    color: '#4CAF50', // vert à la place de #6B4EFF
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
   },
 });
 
-export default OnboardingScreen; 
+export default OnboardingScreen;

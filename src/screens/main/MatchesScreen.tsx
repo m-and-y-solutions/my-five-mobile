@@ -21,6 +21,7 @@ const MatchesScreen = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
   const theme = useTheme();
   const navigation = useNavigation<MatchesScreenNavigationProp>();
   const route = useRoute<MatchesScreenRouteProp>();
@@ -77,7 +78,9 @@ const MatchesScreen = () => {
       (activeFilters.includes('created') && isCreator) ||
       (activeFilters.includes('participating') && isParticipant);
 
-    return matchesSearch && matchesFilters;
+    const matchesVisibility = visibilityFilter === 'all' || match.visibility === visibilityFilter;
+
+    return matchesSearch && matchesFilters && matchesVisibility;
   });
 
   const renderContent = () => {
@@ -167,22 +170,44 @@ const MatchesScreen = () => {
           </View>
 
           <View style={styles.filterContainer}>
-            <Chip
-              selected={activeFilters.includes('created')}
-              onPress={() => toggleFilter('created')}
-              style={styles.filterChip}
-              selectedColor="#4CAF50"
-            >
-              Créés par vous
-            </Chip>
-            <Chip
-              selected={activeFilters.includes('participating')}
-              onPress={() => toggleFilter('participating')}
-              style={styles.filterChip}
-              selectedColor="#4CAF50"
-            >
-              Vos participations
-            </Chip>
+            <View style={styles.filterRow}>
+              <Chip
+                selected={activeFilters.includes('created')}
+                onPress={() => toggleFilter('created')}
+                style={styles.filterChip}
+                selectedColor="#4CAF50"
+              >
+                Créés par vous
+              </Chip>
+              <Chip
+                selected={activeFilters.includes('participating')}
+                onPress={() => toggleFilter('participating')}
+                style={styles.filterChip}
+                selectedColor="#4CAF50"
+              >
+                Vos participations
+              </Chip>
+            </View>
+            {route.params?.isUserMatches && (
+              <View style={styles.filterRow}>
+                <Chip
+                  selected={visibilityFilter === 'public'}
+                  onPress={() => setVisibilityFilter(visibilityFilter === 'public' ? 'all' : 'public')}
+                  style={styles.filterChip}
+                  selectedColor="#4CAF50"
+                >
+                  Publics
+                </Chip>
+                <Chip
+                  selected={visibilityFilter === 'private'}
+                  onPress={() => setVisibilityFilter(visibilityFilter === 'private' ? 'all' : 'private')}
+                  style={styles.filterChip}
+                  selectedColor="#4CAF50"
+                >
+                  Privés
+                </Chip>
+              </View>
+            )}
           </View>
           {filteredMatches.length === 0 ? (
             <Text style={styles.emptyText}>Aucun match trouvé</Text>
@@ -291,14 +316,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   filterContainer: {
-    flexDirection: 'row',
     marginBottom: 16,
+    gap: 8,
+  },
+  filterRow: {
+    flexDirection: 'row',
     gap: 8,
   },
   filterChip: {
     backgroundColor: '#fff',
     borderColor: '#4CAF50',
     borderWidth: 1,
+    flex: 1,
   },
   filterTitleContainer: {
     flexDirection: 'row',

@@ -13,11 +13,12 @@ import config from 'config/config';
 type MatchCardProps = {
   match: Match;
   onPress?: () => void;
+  onJoinSuccess?: () => void;
 };
 
 type MatchCardNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const MatchCard = ({ match, onPress }: MatchCardProps) => {
+const MatchCard = ({ match, onPress, onJoinSuccess }: MatchCardProps) => {
   const navigation = useNavigation<MatchCardNavigationProp>();
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
@@ -50,6 +51,9 @@ const MatchCard = ({ match, onPress }: MatchCardProps) => {
         await dispatch(joinMatch({ matchId: match.id, team: selectedTeam }));
         setJoinModalVisible(false);
         setSelectedTeam(null);
+        if (onJoinSuccess) {
+          onJoinSuccess();
+        }
       } catch (error) {
         console.error('Error joining match:', error);
       }

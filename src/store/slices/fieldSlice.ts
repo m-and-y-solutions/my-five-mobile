@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../../config/config';
+import api from 'services/api';
 
 export interface Field {
   id: string;
@@ -84,7 +85,7 @@ export const fetchFields = createAsyncThunk(
     if (params?.date) queryParams.append('date', params.date.toISOString());
     if (params?.duration) queryParams.append('duration', params.duration.toString());
     
-    const response = await axios.get(`${config.serverUrl}/api/fields?${queryParams.toString()}`, {
+    const response = await api.get(`${config.serverUrl}/api/fields?${queryParams.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -99,7 +100,7 @@ export const fetchFieldById = createAsyncThunk(
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
-    const response = await axios.get(`${config.serverUrl}/api/fields/${fieldId}`, {
+    const response = await api.get(`${config.serverUrl}/api/fields/${fieldId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

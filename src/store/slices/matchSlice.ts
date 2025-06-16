@@ -17,7 +17,7 @@ export const fetchUserMatches = createAsyncThunk(
     const userStr = await AsyncStorage.getItem('user');
     if (!userStr) throw new Error('No user found');
     const user = JSON.parse(userStr);
-    return await matchService.getUserMatches(user.id);
+    return await matchService.getMatches({ creatorId: user.id, status });
   }
 );
 
@@ -36,9 +36,16 @@ export const joinMatch = createAsyncThunk(
 );
 
 export const leaveMatch = createAsyncThunk(
-  'match/leaveMatch',
-  async (matchId: string) => {
-    return await matchService.leaveMatch(matchId);
+  "match/leaveMatch",
+  async ({ matchId, userId }: { matchId: string; userId?: string }) => {
+    return await matchService.leaveMatch(matchId, userId);
+  }
+);
+
+export const updateMatchStatus = createAsyncThunk(
+  "match/updateMatchStatus",
+  async ({ matchId, status }: { matchId: string; status: string }) => {
+    return await matchService.updateMatchStatus(matchId, status);
   }
 );
 
@@ -85,9 +92,7 @@ interface UpdateMatchScoreParams {
 export const updateCaptain = createAsyncThunk(
   'match/updateCaptain',
   async ({ matchId, playerId, team }: UpdateCaptainParams) => {
-    const response = await matchService.updateMatch(matchId, {
-      [`${team}CaptainId`]: playerId
-    });
+    const response = await matchService.updateCaptain(matchId, playerId, team);
     return response;
   }
 );
@@ -271,7 +276,21 @@ const matchSlice = createSlice({
         if (state.selectedMatch) {
           state.selectedMatch = action.payload;
         }
-      });
+      })
+      .addCase(updateMatchStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateMatchStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.selectedMatch) {
+          state.selectedMatch = action.payload;
+        }
+      })
+      .addCase(updateMatchStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to update match status';
+      })
   },
 });
 

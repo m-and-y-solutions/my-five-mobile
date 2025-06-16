@@ -1,6 +1,8 @@
 const config = {
   apiUrl: 'http://192.168.1.16:3000/api',
   serverUrl: 'http://192.168.1.16:3000',
+  //  apiUrl: 'http://192.168.1.16:3000/api',
+  // serverUrl: 'http://192.168.1.16:3000',
 };
 
 export default config;

@@ -1,23 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Button, useTheme, ActivityIndicator, Text, FAB } from 'react-native-paper';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { fetchAllMatches, resetMatches } from '../../store/slices/matchSlice';
-import MatchCard from '../../components/MatchCard';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  FlatList,
+} from "react-native";
+import {
+  Button,
+  useTheme,
+  ActivityIndicator,
+  Text,
+  FAB,
+} from "react-native-paper";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/types";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "../../store";
+import { fetchAllMatches, resetMatches } from "../../store/slices/matchSlice";
+import MatchCard from "../../components/MatchCard";
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Main"
+>;
 
 const HomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  
+
   const dispatch = useDispatch<AppDispatch>();
-  const { matches, loading, error } = useSelector((state: RootState) => state.match);
+  const { matches, loading, error } = useSelector(
+    (state: RootState) => state.match
+  );
 
   useFocusEffect(
     React.useCallback(() => {
@@ -30,9 +47,9 @@ const HomeScreen = () => {
 
   const fetchUpcomingMatches = async () => {
     try {
-      await dispatch(fetchAllMatches('upcoming'));
+      await dispatch(fetchAllMatches("upcoming"));
     } catch (err: any) {
-      console.error('Error in fetchUpcomingMatches:', err);
+      console.error("Error in fetchUpcomingMatches:", err);
     }
   };
 
@@ -40,6 +57,11 @@ const HomeScreen = () => {
     setRefreshing(true);
     await fetchUpcomingMatches();
     setRefreshing(false);
+  };
+
+  const handleJoinSuccess = () => {
+    // Rafraîchir la liste des matchs
+    fetchUpcomingMatches();
   };
 
   const renderContent = () => {
@@ -67,40 +89,67 @@ const HomeScreen = () => {
       );
     }
 
+    const now = Date.now();
+    const filteredMatches = matches.filter((match) => {
+      const matchStart = new Date(match.date).getTime();
+      const matchEnd = matchStart + (match.duration || 0) * 60000;
+      // console.log(
+      //   `Match: ${match.id} | Date: ${match.date} | Start: ${matchStart} | End: ${matchEnd} | Now: ${now} | Show: ${matchEnd >= now}`
+      // );
+      return matchEnd >= now;
+    });
+
     return (
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.section}>
-          <Text variant="headlineSmall" style={styles.sectionTitle}>
-            Matchs à venir
-          </Text>
-          {matches.length === 0 ? (
-            <Text style={styles.emptyText}>Aucun match à venir</Text>
-          ) : (
-            matches.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                onPress={() => navigation.navigate('MatchDetails', { matchId: match.id })}
-              />
-            ))
-          )}
+      <>
+        <View style={styles.titleContainer}>
+          <Button
+            icon="calendar-month"
+            mode="text"
+            labelStyle={{ color: "#000", fontSize: 24, marginRight: 8 }}
+            contentStyle={{ flexDirection: "row" }}
+            style={{ backgroundColor: "transparent", elevation: 0 }}
+            disabled
+          >
+            <Text style={[styles.sectionTitle, { color: "#000" }]}>Matchs à venir </Text>
+          </Button>
         </View>
-      </ScrollView>
+        <FlatList
+          data={filteredMatches}
+          renderItem={({ item }) => (
+            <MatchCard
+              match={item}
+              onPress={() =>
+                navigation.navigate("MatchDetails", { matchId: item.id })
+              }
+              onJoinSuccess={handleJoinSuccess}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4CAF50"]}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Aucun match à venir</Text>
+          }
+        />
+      </>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {renderContent()}
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: '#4CAF50' }]}
-        onPress={() => navigation.navigate('CreateMatch')}
+        style={[styles.fab, { backgroundColor: "#4CAF50" }]}
+        onPress={() => navigation.navigate("CreateMatch")}
         color="#fff"
       />
     </View>
@@ -110,7 +159,19 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
+  },
+  titleContainer: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    elevation: 2,
   },
   content: {
     flex: 1,
@@ -120,33 +181,36 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 16,
-    color: '#4CAF50',
+    color: "#4CAF50",
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#666',
+    textAlign: "center",
+    color: "#666",
     marginVertical: 16,
   },
   errorText: {
-    color: 'red',
-    textAlign: 'center',
+    color: "red",
+    textAlign: "center",
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   retryButton: {
     marginTop: 8,
     borderRadius: 8,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     margin: 16,
     right: 0,
     bottom: 0,
     borderRadius: 8,
   },
+  listContent: {
+    padding: 16,
+  },
 });
 
-export default HomeScreen; 
+export default HomeScreen;

@@ -6,6 +6,9 @@ import axios from 'axios';
 import config from '../../config/config';
 import { LineChart } from 'react-native-chart-kit';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { fetchUserStats } from 'store/slices/userSlice';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from 'store';
 
 interface Achievement {
   id: string;
@@ -33,8 +36,8 @@ interface UserStats {
 }
 
 const { width } = Dimensions.get('window');
-
 const UserStatsScreen = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -56,14 +59,12 @@ const UserStatsScreen = () => {
         return;
       }
 
-      const response = await axios.get(`${config.apiUrl}/users/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await dispatch(fetchUserStats());
+      
 
+      if (fetchUserStats.fulfilled.match(response)) {
       // Calculer les pourcentages et moyennes côté frontend
-      const stats = response.data;
+      const stats = response.payload;
       const totalMatches = stats.totalMatches || 0;
       
       // Calculer le taux de victoire
@@ -131,6 +132,7 @@ const UserStatsScreen = () => {
           };
         }) || []
       });
+    }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors de la récupération des statistiques');
     } finally {
@@ -270,7 +272,7 @@ const UserStatsScreen = () => {
           </View>
           <View style={styles.statCard}>
             <Text variant="headlineMedium" style={[styles.statValue, { color: "#4CAF50" }]}>
-              {Math.floor((stats?.totalPlayTime || 0) / 60)}h
+              {stats?.totalMatches || 0}h
             </Text>
             <Text variant="bodyMedium" style={[styles.statLabel, { color: theme.colors.onSurface }]}>
               Temps de jeu
@@ -385,7 +387,7 @@ const UserStatsScreen = () => {
               style={[styles.positionChip, { backgroundColor: "#4CAF5020" }]}
               textStyle={{ color: "#4CAF50" }}
             >
-              {stats.favoritePosition}
+              {stats.favoritePosition.toLowerCase() === 'forward' ? 'Attaquant' : stats.favoritePosition}
             </Chip>
           </View>
         )}

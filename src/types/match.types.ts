@@ -12,6 +12,7 @@ export interface Match {
   currency?: string;
   team1Score?: number;
   team2Score?: number;
+  duration?: number;
   creator: {
     id: string;
     firstName: string;

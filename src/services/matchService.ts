@@ -16,6 +16,7 @@ export interface Match {
   currency?: string;
   team1Score?: number;
   team2Score?: number;
+  duration?: number;
   creator: {
     id: string;
     firstName: string;
@@ -122,7 +123,12 @@ export interface UpdatePlayerStatsData {
 }
 
 const matchService = {
-  async getMatches(filters?: { status?: string; type?: string; visibility?: string }) {
+  async getMatches(filters?: {
+    creatorId?: string;
+    status?: string;
+    type?: string;
+    visibility?: string;
+  }) {
     const response = await api.get(`${config.apiUrl}/matches`, {
       params: filters,
     });
@@ -151,38 +157,57 @@ const matchService = {
     return response.data;
   },
 
-  async joinMatch(id: string, team: 'team1' | 'team2') {
-    const response = await api.post(`${config.apiUrl}/matches/${id}/join`, { team });
+  async joinMatch(id: string, team: "team1" | "team2") {
+    const response = await api.post(`${config.apiUrl}/matches/${id}/join`, {
+      team,
+    });
     return response.data;
   },
 
-  async leaveMatch(id: string) {
-    const response = await api.post(`${config.apiUrl}/matches/${id}/leave`);
+  async leaveMatch(id: string, userId?: string) {
+    const url = `${config.apiUrl}/matches/${id}/leave/${userId}`
+    const response = await api.post(url);
     return response.data;
   },
 
+ async updateMatchStatus(id: string, status: string) {
+    const response = await api.put(
+      `${config.apiUrl}/matches/${id}/status`,
+      {status}
+    );
+    return response.data;
+  },
   async updateScore(id: string, data: UpdateScoreData) {
-    const response = await api.patch(`${config.apiUrl}/matches/${id}/score`, data);
+    const response = await api.put(
+      `${config.apiUrl}/matches/${id}/score`,
+      data
+    );
     return response.data;
   },
 
   async updatePlayerStats(id: string, data: UpdatePlayerStatsData) {
-    const response = await api.put(`${config.apiUrl}/matches/${id}/stats`, data);
+    const response = await api.put(
+      `${config.apiUrl}/matches/${id}/stats`,
+      data
+    );
     return response.data;
   },
 
-  async updateCaptain(id: string, playerId: string, team: 'team1' | 'team2') {
+  async updateCaptain(id: string, playerId: string, team: "team1" | "team2") {
     const response = await api.put(`${config.apiUrl}/matches/${id}/captain`, {
       playerId,
-      team
+      team,
     });
     return response.data;
   },
 
   async updateMatchScore(id: string, data: UpdateScoreData) {
-    const response = await api.put(`${config.apiUrl}/matches/${id}/score`, data);
+    const response = await api.put(
+      `${config.apiUrl}/matches/${id}/score`,
+      data
+    );
     return response.data;
-  }
+  },
 };
 
-export default matchService; 
+export default matchService;

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { User, UserState } from '../../types/user.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../../config/config';
+import api from 'services/api';
 
 
 const initialState: UserState = {
@@ -19,7 +20,7 @@ export const fetchUserStats = createAsyncThunk(
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
-    const response = await axios.get(`${config.apiUrl}/users/stats`, {
+    const response = await api.get(`${config.apiUrl}/users/stats`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -32,7 +33,7 @@ export const fetchUserSocial = createAsyncThunk(
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
     
-    const response = await axios.get(`${config.apiUrl}/users/social`, {
+    const response = await api.get(`${config.apiUrl}/users/social`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -44,7 +45,7 @@ export const fetchUserById = createAsyncThunk(
   async (userId: string) => {
     const token = await AsyncStorage.getItem('accessToken');
 
-    const response = await axios.get(`${config.apiUrl}/users/${userId}`,{
+    const response = await api.get(`${config.apiUrl}/users/${userId}`,{
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

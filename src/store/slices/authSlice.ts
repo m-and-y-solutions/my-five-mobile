@@ -45,13 +45,13 @@ export const register = createAsyncThunk(
   'auth/register',
   async (data: RegisterData) => {
     const response = await authService.register(data);
-    if (response.success && response.data?.accessToken && response.data?.refreshToken) {
-      if (response.data.user) {
-        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-    } else {
-      console.error('Register response missing tokens:', response);
-    }
+    // if (response.success && response.data?.accessToken && response.data?.refreshToken) {
+    //   if (response.data.user) {
+    //     await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+    //   }
+    // } else {
+    //   console.error('Register response missing tokens:', response);
+    // }
     return response;
   }
 );
@@ -198,6 +198,7 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.user = null;
         state.error = null;
+        // state.hasSeenOnboarding = false; // Remettre à false lors du logout
         
         console.log('🧹 Auth Store - After logout:', {
           accessToken: state.accessToken ? 'Present' : 'Missing',
@@ -209,4 +210,5 @@ const authSlice = createSlice({
 });
 
 export const { setOnboardingSeen, clearError } = authSlice.actions;
-export default authSlice.reducer; 
+
+export default authSlice.reducer;
