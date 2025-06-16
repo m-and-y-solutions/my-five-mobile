@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, TextInput, ScrollView } from 'react-native';
-import { Button, Text, useTheme, HelperText } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Button, Text, useTheme, HelperText, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootStackParamList } from '../../types/navigation.types';
 import ImagePicker from '../../components/ImagePicker';
 import { register } from '../../store/slices/authSlice';
-import { AppDispatch } from '../../store';
+import { AppDispatch, RootState } from '../../store';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { validatePassword } from '../../utils/auth';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -34,16 +36,19 @@ const RegisterScreen = () => {
   const [telephone, setTelephone] = useState('');
   const [profileImage, setprofileImage] = useState<File | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigation = useNavigation<RegisterScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
+  const { loading: authLoading, error: authError } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
 
- 
-
   const handleImageSelected = (data: FormData) => {
-    setprofileImage(data.get('image') as File);
+    //to do test register xith image
+    const image = data.getAll()[0] as unknown as File;
+    setprofileImage(image);
   };
 
   const handleRegister = async () => {
@@ -80,12 +85,10 @@ const RegisterScreen = () => {
         address,
         telephone,
         profileImage,
-
       })).unwrap();
 
       if (result.success) {
-        
-        // navigation.navigate('Login');
+        navigation.navigate('Login');
       } else {
         setError(result.message || 'Une erreur est survenue');
       }
@@ -104,7 +107,10 @@ const RegisterScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.contentContainer}>
           <View style={styles.logoContainer}>
@@ -121,37 +127,52 @@ const RegisterScreen = () => {
             </Text>
 
             <ImagePicker onImageSelected={handleImageSelected} />
-
+         {/* Inputs avec nouveau style */}
             <TextInput
-              placeholder="Prénom"
+              label="Prénom"
               value={firstName}
               onChangeText={setFirstName}
+              mode="outlined"
               autoCapitalize="words"
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="account" color="#4CAF50" />}
             />
 
             <TextInput
-              placeholder="Nom"
+              label="Nom"
               value={lastName}
               onChangeText={setLastName}
+              mode="outlined"
               autoCapitalize="words"
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="account" color="#4CAF50" />}
             />
 
             <TextInput
-              placeholder="Email"
+              label="Email"
               value={email}
               onChangeText={setEmail}
+              mode="outlined"
               autoCapitalize="none"
               keyboardType="email-address"
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="email" color="#4CAF50" />}
             />
 
+            {/* DatePicker avec nouveau style */}
             <TouchableOpacity
-              style={styles.datePickerButton}
+              style={[styles.datePickerButton, { borderColor: '#4CAF50' }]}
               onPress={() => setShowDatePicker(true)}
             >
-              <Text>Date de naissance: {birthDate.toLocaleDateString()}</Text>
+              <View style={styles.datePickerContent}>
+                <MaterialCommunityIcons name="calendar" size={20} color="#4CAF50" />
+                <Text style={styles.datePickerText}>
+                  Date de naissance: {birthDate.toLocaleDateString()}
+                </Text>
+              </View>
             </TouchableOpacity>
 
             {showDatePicker && (
@@ -164,11 +185,16 @@ const RegisterScreen = () => {
               />
             )}
 
-            <View style={styles.pickerContainer}>
+            {/* Picker avec nouveau style */}
+            <View style={[styles.pickerContainer, { borderColor: '#4CAF50' }]}>
+              <View style={styles.pickerIcon}>
+                <MaterialCommunityIcons name="map-marker" size={20} color="#4CAF50" />
+              </View>
               <Picker
                 selectedValue={commune}
                 onValueChange={(itemValue) => setCommune(itemValue)}
                 style={styles.picker}
+                dropdownIconColor="#4CAF50"
               >
                 <Picker.Item label="Sélectionnez votre commune" value="" />
                 {COMMUNES.map((commune) => (
@@ -178,41 +204,72 @@ const RegisterScreen = () => {
             </View>
 
             <TextInput
-              placeholder="Adresse"
+              label="Adresse"
               value={address}
               onChangeText={setAddress}
+              mode="outlined"
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="home" color="#4CAF50" />}
             />
 
             <TextInput
-              placeholder="Téléphone"
+              label="Téléphone"
               value={telephone}
               onChangeText={setTelephone}
+              mode="outlined"
               keyboardType="phone-pad"
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="phone" color="#4CAF50" />}
             />
 
             <TextInput
-              placeholder="Mot de passe"
+              label="Mot de passe"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              mode="outlined"
+              secureTextEntry={!showPassword}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowPassword(!showPassword)}
+                  color="#4CAF50"
+                />
+              }
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="lock" color="#4CAF50" />}
             />
 
-            <HelperText type="info" visible={true}>
+            <HelperText type="info" visible={true} style={styles.helperText}>
               Le mot de passe doit contenir au moins 6 caractères et un symbole (!@#$%^&(),.?":{'{}'}|&lt;&gt;)
             </HelperText>
 
             <TextInput
-              placeholder="Confirmer le mot de passe"
+              label="Confirmer le mot de passe"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              mode="outlined"
+              secureTextEntry={!showConfirmPassword}
+              right={
+                <TextInput.Icon
+                  icon={showConfirmPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  color="#4CAF50"
+                />
+              }
               style={styles.input}
+              activeOutlineColor="#4CAF50"
+              left={<TextInput.Icon icon="lock-check" color="#4CAF50" />}
             />
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <MaterialCommunityIcons name="alert-circle" size={20} color="#FF0000" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
             <Button
               mode="contained"
@@ -220,6 +277,7 @@ const RegisterScreen = () => {
               style={styles.button}
               loading={loading}
               disabled={loading}
+              buttonColor="#4CAF50"
             >
               S'inscrire
             </Button>
@@ -228,13 +286,14 @@ const RegisterScreen = () => {
               mode="text"
               onPress={() => navigation.navigate('Login')}
               style={styles.linkButton}
+              textColor="#4CAF50"
             >
               Déjà un compte ? Se connecter
             </Button>
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -270,10 +329,6 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    borderRadius: 8,
     backgroundColor: '#fff',
   },
   button: {
@@ -289,23 +344,64 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
   },
+
+  linkButtonLabel: {
+    fontSize: 14,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    color: '#FF0000',
+    textAlign: 'center',
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 16,
+  },
   datePickerButton: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    borderRadius: 8,
+    borderRadius: 4,
     marginBottom: 16,
+    height: 56,
+    justifyContent: 'center',
+  },
+  datePickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  datePickerText: {
+    fontSize: 16,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderRadius: 4,
     marginBottom: 16,
     overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+  },
+  pickerIcon: {
+    paddingLeft: 16,
+    paddingRight: 8,
   },
   picker: {
-    height: 50,
+    flex: 1,
+    height: '100%',
+  },
+   buttonLabel: {
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
+
 
 export default RegisterScreen; 

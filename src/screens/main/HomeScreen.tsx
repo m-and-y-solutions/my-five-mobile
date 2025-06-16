@@ -1,85 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Button, useTheme, ActivityIndicator, Text } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RootStackParamList } from '../../navigation/types';
-import { Match } from '../../services/matchService';
-import axios from 'axios';
-import { API_URL } from '../../config/config';
-import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
-import MatchCard from '../../components/MatchCard';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  FlatList,
+} from "react-native";
+import {
+  Button,
+  useTheme,
+  ActivityIndicator,
+  Text,
+  FAB,
+} from "react-native-paper";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/types";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "../../store";
+import { fetchAllMatches, resetMatches } from "../../store/slices/matchSlice";
+import MatchCard from "../../components/MatchCard";
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Main"
+>;
 
 const HomeScreen = () => {
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [usingMockData, setUsingMockData] = useState(false);
   const theme = useTheme();
   const navigation = useNavigation<HomeScreenNavigationProp>();
 
-  useEffect(() => {
-    fetchUpcomingMatches();
-  }, []);
+  const dispatch = useDispatch<AppDispatch>();
+  const { matches, loading, error } = useSelector(
+    (state: RootState) => state.match
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUpcomingMatches();
+      return () => {
+        dispatch(resetMatches());
+      };
+    }, [])
+  );
 
   const fetchUpcomingMatches = async () => {
     try {
-      console.log('Fetching upcoming matches...');
-      setLoading(true);
-      setError('');
-      setUsingMockData(false);
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('No token found');
-        setError('Please login to view matches');
-        return;
-      }
-
-      // Try to get matches from localStorage first
-      const storedMatches = await AsyncStorage.getItem('upcomingMatches');
-      if (storedMatches) {
-        console.log('Using stored matches data');
-        setUpcomingMatches(JSON.parse(storedMatches));
-      }
-
-      // Try to fetch fresh data from backend
-      try {
-        console.log('Fetching fresh matches data...');
-        const response = await axios.get(`${API_URL}/matches`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            status: 'upcoming',
-          },
-          timeout: 10000,
-        });
-
-        console.log('Matches fetched successfully:', response.data);
-        setUpcomingMatches(response.data);
-
-        // Update localStorage with fresh data
-        await AsyncStorage.setItem('upcomingMatches', JSON.stringify(response.data));
-      } catch (err: any) {
-        console.error('Error fetching fresh matches:', err);
-        if (!storedMatches) {
-          // If no stored data and backend fails, use mock data
-          console.log('Using mock data instead...');
-          setUsingMockData(true);
-          const mockUpcomingMatches = MOCK_MATCHES.filter(match => match.status === 'upcoming');
-          setUpcomingMatches(mockUpcomingMatches);
-        }
-      }
+      await dispatch(fetchAllMatches("upcoming"));
     } catch (err: any) {
-      console.error('Error in fetchUpcomingMatches:', err);
-      setError(err.response?.data?.message || 'Failed to fetch matches');
-    } finally {
-      setLoading(false);
+      console.error("Error in fetchUpcomingMatches:", err);
     }
   };
 
@@ -89,16 +59,21 @@ const HomeScreen = () => {
     setRefreshing(false);
   };
 
+  const handleJoinSuccess = () => {
+    // Rafraîchir la liste des matchs
+    fetchUpcomingMatches();
+  };
+
   const renderContent = () => {
     if (loading && !refreshing) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color="#4CAF50" />
         </View>
       );
     }
 
-    if (error && !upcomingMatches.length) {
+    if (error && !matches.length) {
       return (
         <View style={styles.centerContainer}>
           <Text style={styles.errorText}>{error}</Text>
@@ -106,61 +81,77 @@ const HomeScreen = () => {
             mode="contained"
             onPress={fetchUpcomingMatches}
             style={styles.retryButton}
+            buttonColor="#4CAF50"
           >
-            Retry
+            Réessayer
           </Button>
         </View>
       );
     }
 
-    return (
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {usingMockData && (
-          <View style={styles.mockDataWarning}>
-            <Text style={styles.mockDataText}>
-              Using mock data - {error}
-            </Text>
-          </View>
-        )}
-        <View style={styles.section}>
-          <Text variant="headlineSmall" style={styles.sectionTitle}>
-            Upcoming Matches
-          </Text>
-          {upcomingMatches.length === 0 ? (
-            <Text style={styles.emptyText}>No upcoming matches available</Text>
-          ) : (
-            upcomingMatches.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                onPress={() => navigation.navigate('MatchDetails', { matchId: match.id })}
-              />
-            ))
-          )}
-        </View>
+    const now = Date.now();
+    const filteredMatches = matches.filter((match) => {
+      const matchStart = new Date(match.date).getTime();
+      const matchEnd = matchStart + (match.duration || 0) * 60000;
+      // console.log(
+      //   `Match: ${match.id} | Date: ${match.date} | Start: ${matchStart} | End: ${matchEnd} | Now: ${now} | Show: ${matchEnd >= now}`
+      // );
+      return matchEnd >= now;
+    });
 
-        <View style={styles.section}>
+    return (
+      <>
+        <View style={styles.titleContainer}>
           <Button
-            mode="contained"
-            icon="plus"
-            onPress={() => navigation.navigate('CreateMatch')}
-            style={styles.createButton}
+            icon="calendar-month"
+            mode="text"
+            labelStyle={{ color: "#000", fontSize: 24, marginRight: 8 }}
+            contentStyle={{ flexDirection: "row" }}
+            style={{ backgroundColor: "transparent", elevation: 0 }}
+            disabled
           >
-            Create New Match
+            <Text style={[styles.sectionTitle, { color: "#000" }]}>Matchs à venir </Text>
           </Button>
         </View>
-      </ScrollView>
+        <FlatList
+          data={filteredMatches}
+          renderItem={({ item }) => (
+            <MatchCard
+              match={item}
+              onPress={() =>
+                navigation.navigate("MatchDetails", { matchId: item.id })
+              }
+              onJoinSuccess={handleJoinSuccess}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4CAF50"]}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>Aucun match à venir</Text>
+          }
+        />
+      </>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {renderContent()}
+      <FAB
+        icon="plus"
+        style={[styles.fab, { backgroundColor: "#4CAF50" }]}
+        onPress={() => navigation.navigate("CreateMatch")}
+        color="#fff"
+      />
     </View>
   );
 };
@@ -168,7 +159,19 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
+  },
+  titleContainer: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    elevation: 2,
   },
   content: {
     flex: 1,
@@ -178,39 +181,36 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 16,
+    color: "#4CAF50",
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#666',
+    textAlign: "center",
+    color: "#666",
     marginVertical: 16,
   },
   errorText: {
-    color: 'red',
-    textAlign: 'center',
+    color: "red",
+    textAlign: "center",
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  createButton: {
-    marginTop: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
   retryButton: {
     marginTop: 8,
+    borderRadius: 8,
   },
-  mockDataWarning: {
-    backgroundColor: '#fff3cd',
-    padding: 8,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 4,
+  fab: {
+    position: "absolute",
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8,
   },
-  mockDataText: {
-    color: '#856404',
-    textAlign: 'center',
-    fontSize: 12,
+  listContent: {
+    padding: 16,
   },
 });
 
-export default HomeScreen; 
+export default HomeScreen;

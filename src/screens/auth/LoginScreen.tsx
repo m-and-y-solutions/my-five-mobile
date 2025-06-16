@@ -1,46 +1,36 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
-import { Button, Text, useTheme } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { View, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootStackParamList } from '../../types/navigation.types';
 import { login } from '../../store/slices/authSlice';
 import { AppDispatch, RootState } from '../../store';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/types';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
-const LoginScreen = () => {
+const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const navigation = useNavigation<LoginScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-  const { error } = useSelector((state: RootState) => state.auth);
+  const { loading, error } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
 
   const handleLogin = async () => {
     try {
-      setLoading(true);
-      const result = await dispatch(login({ email, password }));
-      if (login.fulfilled.match(result)) {
-        console.log('Login successful');
-        // Le token est déjà stocké par le reducer auth
-        // La navigation sera gérée automatiquement par le Navigation component
-        // qui vérifie isAuthenticated
-      }
+      await dispatch(login({ email, password }));
     } catch (err: any) {
       console.error('Login error:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.contentContainer}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.logoContainer}>
           <Image
             source={require('../../../assets/My-Five-Logo-black.png')}
@@ -55,29 +45,41 @@ const LoginScreen = () => {
           </Text>
 
           <TextInput
-            placeholder="Email"
+            label="Email"
             value={email}
             onChangeText={setEmail}
-            autoCapitalize="none"
+            mode="outlined"
             keyboardType="email-address"
+            autoCapitalize="none"
             style={styles.input}
+            activeOutlineColor="#4CAF50"
           />
 
           <TextInput
-            placeholder="Mot de passe"
+            label="Mot de passe"
             value={password}
             onChangeText={setPassword}
+            mode="outlined"
             secureTextEntry={!showPassword}
+            right={
+              <TextInput.Icon
+                icon={showPassword ? 'eye-off' : 'eye'}
+                onPress={() => setShowPassword(!showPassword)}
+              />
+            }
             style={styles.input}
+            activeOutlineColor="#4CAF50"
           />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
           <Button
             mode="contained"
             onPress={handleLogin}
             loading={loading}
+            disabled={loading}
             style={styles.button}
+            buttonColor="#4CAF50"
           >
             Se connecter
           </Button>
@@ -86,12 +88,13 @@ const LoginScreen = () => {
             mode="text"
             onPress={() => navigation.navigate('Register')}
             style={styles.linkButton}
+            textColor="#4CAF50"
           >
             Pas encore de compte ? S'inscrire
           </Button>
         </View>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -100,10 +103,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  contentContainer: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
   },
   logoContainer: {
     alignItems: 'center',
@@ -114,35 +116,28 @@ const styles = StyleSheet.create({
     height: 150,
   },
   formContainer: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
+    paddingHorizontal: 20,
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#4CAF50',
   },
   input: {
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    borderRadius: 8,
     backgroundColor: '#fff',
   },
   button: {
     marginTop: 8,
-    paddingVertical: 8,
     borderRadius: 8,
   },
   linkButton: {
-    marginTop: 20,
-    alignItems: 'center',
+    marginTop: 16,
   },
-  error: {
+  errorText: {
     color: 'red',
     textAlign: 'center',
-    marginBottom: 10,
-  },
-  title: {
-    marginBottom: 24,
-    textAlign: 'center',
+    marginBottom: 16,
   },
 });
 

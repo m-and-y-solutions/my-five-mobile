@@ -10,6 +10,8 @@ export type RootStackParamList = {
   MatchDetails: { matchId: string };
   UserStats: undefined;
   TournamentDetails: { tournamentId: string };
+  Profile: { userId?: string };
+  ProfileMain: undefined;
 };
 
 export type MainTabParamList = {

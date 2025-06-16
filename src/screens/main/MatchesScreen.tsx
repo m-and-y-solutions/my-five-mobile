@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Button, useTheme, ActivityIndicator, Text, Searchbar } from 'react-native-paper';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { Button, useTheme, ActivityIndicator, Text, Searchbar, FAB, Chip, Icon } from 'react-native-paper';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
 import { Match } from '../../services/matchService';
-import axios from 'axios';
-import { API_URL } from '../../config/config';
-import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
+import { fetchAllMatches, fetchUserMatches, resetMatches } from '../../store/slices/matchSlice';
 import MatchCard from '../../components/MatchCard';
+import config from 'config/config';
+import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
 
 type MatchesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 type MatchesScreenRouteProp = RouteProp<RootStackParamList, 'Matches'>;
@@ -17,74 +19,35 @@ type MatchesScreenRouteProp = RouteProp<RootStackParamList, 'Matches'>;
 const MatchesScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [usingMockData, setUsingMockData] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
   const theme = useTheme();
   const navigation = useNavigation<MatchesScreenNavigationProp>();
   const route = useRoute<MatchesScreenRouteProp>();
+  
+  const dispatch = useDispatch<AppDispatch>();
+  const { matches, loading, error } = useSelector((state: RootState) => state.match);
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
 
-  useEffect(() => {
-    fetchMatches();
-  }, [activeTab]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchMatches();
+      return () => {
+        dispatch(resetMatches());
+      };
+    }, [activeTab])
+  );
 
   const fetchMatches = async () => {
     try {
-      console.log('Fetching matches...');
-      setLoading(true);
-      setError('');
-      setUsingMockData(false);
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('No token found');
-        setError('Please login to view matches');
-        return;
-      }
-
-      // Try to get matches from localStorage first
-      const storedMatches = await AsyncStorage.getItem('matches');
-      if (storedMatches) {
-        console.log('Using stored matches data');
-        setMatches(JSON.parse(storedMatches));
-      }
-
-      // Try to fetch fresh data from backend
-      try {
-        console.log('Fetching fresh matches data...');
-        const response = await axios.get(`${API_URL}/matches`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            status: activeTab,
-            isUserMatches: route.params?.isUserMatches,
-          },
-          timeout: 10000,
-        });
-
-        console.log('Matches fetched successfully:', response.data);
-        setMatches(response.data);
-
-        // Update localStorage with fresh data
-        await AsyncStorage.setItem('matches', JSON.stringify(response.data));
-      } catch (err: any) {
-        console.error('Error fetching fresh matches:', err);
-        if (!storedMatches) {
-          // If no stored data and backend fails, use mock data
-          console.log('Using mock data instead...');
-          setUsingMockData(true);
-          const mockMatches = MOCK_MATCHES.filter(match => match.status === activeTab);
-          setMatches(mockMatches);
-        }
+      if (route.params?.isUserMatches) {
+        await dispatch(fetchUserMatches(activeTab));
+      } else {
+        await dispatch(fetchAllMatches(activeTab));
       }
     } catch (err: any) {
       console.error('Error in fetchMatches:', err);
-      setError(err.response?.data?.message || 'Failed to fetch matches');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -94,17 +57,37 @@ const MatchesScreen = () => {
     setRefreshing(false);
   };
 
-  const filteredMatches = matches.filter(match =>
-    match.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    match.field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    match.field.city.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const toggleFilter = (filter: string) => {
+    setActiveFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    );
+  };
+
+  const filteredMatches = matches.filter((match: Match) => {
+    const matchesSearch = match.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         match.field.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         match.field.city.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const isCreator = match.creator.id === userId;
+    const isParticipant = match.team1?.players.some(p => p.player.id === userId) || 
+                         match.team2?.players.some(p => p.player.id === userId);
+
+    const matchesFilters = activeFilters.length === 0 || 
+      (activeFilters.includes('created') && isCreator) ||
+      (activeFilters.includes('participating') && isParticipant);
+
+    const matchesVisibility = visibilityFilter === 'all' || match.visibility === visibilityFilter;
+
+    return matchesSearch && matchesFilters && matchesVisibility;
+  });
 
   const renderContent = () => {
     if (loading && !refreshing) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color="#4CAF50" />
         </View>
       );
     }
@@ -131,47 +114,105 @@ const MatchesScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {usingMockData && (
-          <View style={styles.mockDataWarning}>
-            <Text style={styles.mockDataText}>
-              Using mock data - {error}
-            </Text>
-          </View>
-        )}
         <View style={styles.section}>
           <Searchbar
-            placeholder="Search matches..."
+            placeholder="Rechercher des matchs..."
             onChangeText={setSearchQuery}
             value={searchQuery}
             style={styles.searchBar}
+            iconColor="#4CAF50"
+            inputStyle={styles.searchInput}
+            mode="bar"
           />
+       
           <View style={styles.tabs}>
             <Button
               mode={activeTab === 'upcoming' ? 'contained' : 'outlined'}
               onPress={() => setActiveTab('upcoming')}
-              style={styles.tabButton}
+              style={[
+                styles.tabButton,
+                activeTab === 'upcoming' ? styles.tabButtonActive : styles.tabButtonInactive
+              ]}
+              buttonColor="#4CAF50"
+              textColor={activeTab === 'upcoming' ? '#fff' : '#4CAF50'}
             >
-              Upcoming
+              À venir
             </Button>
             <Button
               mode={activeTab === 'ongoing' ? 'contained' : 'outlined'}
               onPress={() => setActiveTab('ongoing')}
-              style={styles.tabButton}
+              style={[
+                styles.tabButton,
+                activeTab === 'ongoing' ? styles.tabButtonActive : styles.tabButtonInactive
+              ]}
+              buttonColor="#4CAF50"
+              textColor={activeTab === 'ongoing' ? '#fff' : '#4CAF50'}
             >
-              Ongoing
+              En cours
             </Button>
             <Button
               mode={activeTab === 'completed' ? 'contained' : 'outlined'}
               onPress={() => setActiveTab('completed')}
-              style={styles.tabButton}
+              style={[
+                styles.tabButton,
+                activeTab === 'completed' ? styles.tabButtonActive : styles.tabButtonInactive
+              ]}
+              buttonColor="#4CAF50"
+              textColor={activeTab === 'completed' ? '#fff' : '#4CAF50'}
             >
-              Completed
+              Terminés
             </Button>
+            
+          </View>
+          <View style={styles.filterTitleContainer}>
+            <Icon source="filter" size={20} color="#4CAF50" />
+            <Text style={styles.filterTitle}>Filtres</Text>
+          </View>
+
+          <View style={styles.filterContainer}>
+            <View style={styles.filterRow}>
+              <Chip
+                selected={activeFilters.includes('created')}
+                onPress={() => toggleFilter('created')}
+                style={styles.filterChip}
+                selectedColor="#4CAF50"
+              >
+                Créés par vous
+              </Chip>
+              <Chip
+                selected={activeFilters.includes('participating')}
+                onPress={() => toggleFilter('participating')}
+                style={styles.filterChip}
+                selectedColor="#4CAF50"
+              >
+                Vos participations
+              </Chip>
+            </View>
+            {route.params?.isUserMatches && (
+              <View style={styles.filterRow}>
+                <Chip
+                  selected={visibilityFilter === 'public'}
+                  onPress={() => setVisibilityFilter(visibilityFilter === 'public' ? 'all' : 'public')}
+                  style={styles.filterChip}
+                  selectedColor="#4CAF50"
+                >
+                  Publics
+                </Chip>
+                <Chip
+                  selected={visibilityFilter === 'private'}
+                  onPress={() => setVisibilityFilter(visibilityFilter === 'private' ? 'all' : 'private')}
+                  style={styles.filterChip}
+                  selectedColor="#4CAF50"
+                >
+                  Privés
+                </Chip>
+              </View>
+            )}
           </View>
           {filteredMatches.length === 0 ? (
-            <Text style={styles.emptyText}>No matches found</Text>
+            <Text style={styles.emptyText}>Aucun match trouvé</Text>
           ) : (
-            filteredMatches.map((match) => (
+            filteredMatches.map((match: Match) => (
               <MatchCard
                 key={match.id}
                 match={match}
@@ -187,6 +228,12 @@ const MatchesScreen = () => {
   return (
     <View style={styles.container}>
       {renderContent()}
+      <FAB
+        icon="plus"
+        style={[styles.fab, { backgroundColor: '#4CAF50' }]}
+        onPress={() => navigation.navigate('CreateMatch')}
+        color="#fff"
+      />
     </View>
   );
 };
@@ -204,6 +251,14 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  searchInput: {
+    color: '#333',
   },
   tabs: {
     flexDirection: 'row',
@@ -212,6 +267,15 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  tabButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  tabButtonInactive: {
+    backgroundColor: '#fff',
   },
   emptyText: {
     textAlign: 'center',
@@ -229,6 +293,8 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
+    borderRadius: 8,
+    backgroundColor: '#4CAF50',
   },
   mockDataWarning: {
     backgroundColor: '#fff3cd',
@@ -241,6 +307,39 @@ const styles = StyleSheet.create({
     color: '#856404',
     textAlign: 'center',
     fontSize: 12,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8,
+  },
+  filterContainer: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterChip: {
+    backgroundColor: '#fff',
+    borderColor: '#4CAF50',
+    borderWidth: 1,
+    flex: 1,
+  },
+  filterTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+    gap: 8,
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 

@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity, Modal } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Text, TextInput, Button, IconButton, List } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation.types';
 import { CITIES } from 'constants/countries.constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { API_URL } from '../../config/config';
-
-interface Field {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  isAvailable: boolean;
-}
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { fetchFields } from '../../store/slices/fieldSlice';
+import { createMatch } from '../../store/slices/matchSlice';
+import { Field } from '../../store/slices/fieldSlice';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -26,65 +23,221 @@ type CreateMatchScreenNavigationProp = NativeStackNavigationProp<RootStackParamL
 
 const CreateMatchScreen = () => {
   const navigation = useNavigation<CreateMatchScreenNavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
+  const { fields, loading: fieldsLoading, error: fieldsError } = useSelector((state: RootState) => state.field);
+  
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('10');
+  const [team1Name, setTeam1Name] = useState('');
+  const [team2Name, setTeam2Name] = useState('');
   const [isPublic, setIsPublic] = useState(true);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<{id: string, name: string} | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [fieldModalVisible, setFieldModalVisible] = useState(false);
-  const [fields, setFields] = useState<FieldsByCity>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [fieldsByCity, setFieldsByCity] = useState<FieldsByCity>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [duration, setDuration] = useState('60');
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [isFieldSelectionEnabled, setIsFieldSelectionEnabled] = useState(false);
+  const [title, setTitle] = useState('');
+
+  const isFieldAvailable = (field: Field) => {
+    if (!field.isAvailable) return false;
+    if (!date || !time) return true;
+
+    const [day, month, year] = date.split('/').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    const selectedDateTime = new Date(year, month - 1, day, hours, minutes);
+    const endDateTime = new Date(selectedDateTime.getTime() + parseInt(duration) * 60000);
+
+    const hasConflictingBooking = field.bookings?.some(booking => {
+      const bookingStart = new Date(booking.startTime);
+      const bookingEnd = new Date(booking.endTime);
+      
+      const isSameDay = 
+        bookingStart.getFullYear() === selectedDateTime.getFullYear() &&
+        bookingStart.getMonth() === selectedDateTime.getMonth() &&
+        bookingStart.getDate() === selectedDateTime.getDate();
+
+      if (!isSameDay) return false;
+
+      const bookingStartTime = bookingStart.getHours() * 60 + bookingStart.getMinutes();
+      const bookingEndTime = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+      const selectedStartTime = selectedDateTime.getHours() * 60 + selectedDateTime.getMinutes();
+      const selectedEndTime = endDateTime.getHours() * 60 + endDateTime.getMinutes();
+
+      return (
+        (selectedStartTime >= bookingStartTime && selectedStartTime < bookingEndTime) ||
+        (selectedEndTime > bookingStartTime && selectedEndTime <= bookingEndTime) ||
+        (selectedStartTime <= bookingStartTime && selectedEndTime >= bookingEndTime)
+      );
+    });
+
+    return !hasConflictingBooking;
+  };
+
 
   useEffect(() => {
-    fetchFields();
-  }, []);
-
-  const fetchFields = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get(`${API_URL}/fields`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Organize fields by city
-      const fieldsByCity: FieldsByCity = {};
-      response.data.forEach((field: Field) => {
-        const cityId = CITIES.find(city => city.name === field.city)?.id;
-        if (cityId) {
-          if (!fieldsByCity[cityId]) {
-            fieldsByCity[cityId] = [];
-          }
-          fieldsByCity[cityId].push(field);
+    const organizedFields: FieldsByCity = {};
+    fields.forEach((field: Field) => {
+      const cityId = CITIES.find(city => city.name === field.city)?.id;
+      if (cityId) {
+        if (!organizedFields[cityId]) {
+          organizedFields[cityId] = [];
         }
-      });
+        organizedFields[cityId].push(field);
+      }
+    });
+    setFieldsByCity(organizedFields);
+  }, [fields]);
 
-      setFields(fieldsByCity);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'An error occurred');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (selectedField && !isFieldAvailable(fields.find(f => f.id === selectedField)!)) {
+      setSelectedField(null);
+    }
+  }, [date, time, duration]);
+
+  const validateTime = (selectedDate: Date) => {
+    const newErrors: {[key: string]: string} = {};
+    const dayOfWeek = selectedDate.getDay();
+    const hours = selectedDate.getHours();
+    
+    console.log('=== Validation Time ===');
+    console.log('Original Date:', selectedDate.toString());
+    console.log('hours', hours);
+    console.log('dayOfWeek', dayOfWeek);
+    
+    let isValidTime = false;
+    if (dayOfWeek === 0) { // Dimanche
+      isValidTime = (hours >= 10 && hours < 24) || (hours >= 0 && hours < 2);
+    } else if (dayOfWeek === 3 || dayOfWeek === 6) { // Mercredi et Samedi
+      isValidTime = (hours >= 13 && hours < 24) || (hours >= 0 && hours < 2);
+    } else { // Lundi, Mardi, Jeudi, Vendredi
+      isValidTime = (hours >= 16 && hours < 24) || (hours >= 0 && hours < 2);
+    }
+
+    if (!isValidTime) {
+      newErrors.time = `L'heure n'est pas dans les horaires d'ouverture : 
+      Lundi – Mardi – Jeudi – Vendredi : De 16H à 02H
+      Mercredi – Samedi : De 13H à 02H
+      Dimanche : de 10H à 02H`;
+    }
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleDateChange = (selectedDate: Date) => {
+    const timeZone = 'Europe/Brussels';
+    const zonedDate = toZonedTime(selectedDate, timeZone);
+    console.log('----------', { selectedDate, zonedDate });
+    
+    if (!validateTime(zonedDate)) {
+      // Si la validation échoue, on ne change pas la date
+      setShowDatePicker(false);
+      return;
+    }
+    
+    setShowDatePicker(false);
+    setSelectedDate(zonedDate);
+    setDate(format(zonedDate, 'yyyy-MM-dd'));
+    setTime(format(zonedDate, 'HH:mm'));
+    setErrors(prev => ({ ...prev, date: '', time: '' }));
+  };
+
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDateObj = new Date(selectedDate);
+    selectedDateObj.setHours(0, 0, 0, 0);
+
+    if (!date) {
+      newErrors.date = 'La date est requise';
+    } else if (selectedDateObj < today) {
+      newErrors.date = 'La date ne peut pas être dans le passé';
+    }
+
+    if (!time) {
+      newErrors.time = "L'heure est requise";
+    } else {
+      validateTime(selectedDate);
+    }
+
+    if (!selectedCity) {
+      newErrors.city = 'La commune est requise';
+    }
+
+    if (!selectedField) {
+      newErrors.field = 'Le terrain est requis';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCreate = async () => {
+    if (validateForm()) {
+      try {
+        const selectedFieldData = fields.find(f => f.id === selectedField);
+        const timeZone = 'Europe/Brussels';
+        const zonedDate = toZonedTime(selectedDate, timeZone);
+        
+        await dispatch(createMatch({
+          title: title || `${selectedFieldData?.name} - ${format(zonedDate, 'dd/MM/yyyy')}`,
+          date: selectedDate,
+          maxPlayers: parseInt(maxPlayers),
+          type: 'friendly',
+          visibility: isPublic ? 'public' : 'private',
+          fieldId: selectedField!,
+          location: selectedFieldData?.address || '',
+          team1Name: team1Name || undefined,
+          team2Name: team2Name || undefined,
+          duration: parseInt(duration)
+        }));
+        navigation.goBack();
+      } catch (error: any) {
+        console.error('Error creating match:', error);
+      }
     }
   };
 
-  const handleCreate = () => {
-    console.log('Creating match:', { date, time, maxPlayers, isPublic, selectedCity, selectedField });
-    navigation.goBack();
+  const selectedFieldData = selectedCity ? fieldsByCity[selectedCity.id]?.find(field => field.id === selectedField) : null;
+
+  const checkRequiredFields = () => {
+    const hasRequiredFields = Boolean(date && time && duration && selectedCity);
+    setIsFieldSelectionEnabled(hasRequiredFields);
+    return hasRequiredFields;
   };
 
-  const selectedCityData = CITIES.find(city => city.id === selectedCity);
-  const selectedFieldData = selectedCity ? fields[selectedCity]?.find(field => field.id === selectedField) : null;
+  useEffect(() => {
+    checkRequiredFields();
+  }, [date, time, duration, selectedCity]);
+
+  const handleFieldSelection = async () => {
+    if (!isFieldSelectionEnabled) return;
+    
+    try {
+      const [day, month, year] = date.split('/');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      await dispatch(fetchFields({
+        cityId: selectedCity?.name || undefined,
+        date: selectedDate,
+        duration: parseInt(duration)
+      }));
+      setFieldModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching available fields:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,214 +245,351 @@ const CreateMatchScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-      
-        <View style={styles.content}>
-          <View style={styles.form}>
-            <View style={styles.toggleContainer}>
-              <Text style={styles.toggleLabel}>Visibilité du match</Text>
-              <View style={styles.toggleButtons}>
-                <TouchableOpacity
-                  style={[styles.toggleButton, isPublic && styles.toggleButtonActive]}
-                  onPress={() => setIsPublic(true)}
-                >
-                  <Text style={[styles.toggleButtonText, isPublic && styles.toggleButtonTextActive]}>
-                    Public
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleButton, !isPublic && styles.toggleButtonActive]}
-                  onPress={() => setIsPublic(false)}
-                >
-                  <Text style={[styles.toggleButtonText, !isPublic && styles.toggleButtonTextActive]}>
-                    Privé
-                  </Text>
-                </TouchableOpacity>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.form}>
+           
+
+              <View style={styles.toggleContainer}>
+                <Text style={styles.toggleLabel}>Visibilité du match</Text>
+                <View style={styles.toggleButtons}>
+                  <TouchableOpacity
+                    style={[styles.toggleButton, isPublic && styles.toggleButtonActive]}
+                    onPress={() => setIsPublic(true)}
+                  >
+                    <Text style={[styles.toggleButtonText, isPublic && styles.toggleButtonTextActive]}>
+                      Public
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.toggleButton, !isPublic && styles.toggleButtonActive]}
+                    onPress={() => setIsPublic(false)}
+                  >
+                    <Text style={[styles.toggleButtonText, !isPublic && styles.toggleButtonTextActive]}>
+                      Privé
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-            <View style={styles.inputContainer}>
-              <TextInput
-                label="Date"
-                value={date}
-                onChangeText={setDate}
-                placeholder="JJ/MM/AAAA"
-                style={styles.input}
-                mode="outlined"
-                left={<TextInput.Icon icon="calendar" />}
-                outlineColor="#6B4EFF"
-                activeOutlineColor="#6B4EFF"
-              />
-            </View>
 
-            <View style={styles.inputContainer}>
-              <TextInput
-                label="Heure"
-                value={time}
-                onChangeText={setTime}
-                placeholder="HH:MM"
-                style={styles.input}
-                mode="outlined"
-                left={<TextInput.Icon icon="clock-outline" />}
-                outlineColor="#6B4EFF"
-                activeOutlineColor="#6B4EFF"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <TouchableOpacity 
-                onPress={() => setCityModalVisible(true)}
-                style={styles.touchableInput}
-              >
+              <View style={styles.inputContainer}>
                 <TextInput
-                  label="Commune"
-                  value={selectedCityData?.name || ''}
-                  placeholder="Sélectionner une commune"
+                  label="Titre du match"
+                  value={title}
+                  onChangeText={setTitle}
                   style={styles.input}
                   mode="outlined"
-                  left={<TextInput.Icon icon="city" />}
-                  right={<TextInput.Icon icon="chevron-down" />}
-                  outlineColor="#6B4EFF"
-                  activeOutlineColor="#6B4EFF"
-                  editable={false}
+                  left={<TextInput.Icon icon="format-title" />}
+                  outlineColor='#4CAF50'
+                  activeOutlineColor='#4CAF50'
                 />
-              </TouchableOpacity>
-              <Modal
-                visible={cityModalVisible}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setCityModalVisible(false)}
-              >
-                <TouchableOpacity 
-                  style={styles.modalContainer}
-                  activeOpacity={1}
-                  onPress={() => setCityModalVisible(false)}
-                >
-                  <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Sélectionner une commune</Text>
-                      <IconButton
-                        icon="close"
-                        size={24}
-                        onPress={() => setCityModalVisible(false)}
-                      />
-                    </View>
-                    {CITIES.map(city => (
-                      <List.Item
-                        key={city.id}
-                        title={city.name}
-                        onPress={() => {
-                          setSelectedCity(city.id);
-                          setSelectedField(null);
-                          setCityModalVisible(false);
-                        }}
-                        style={styles.listItem}
-                      />
-                    ))}
-                  </View>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                  <TextInput
+                    label="Date"
+                    value={date}
+                    placeholder="JJ/MM/AAAA"
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="calendar" />}
+                    outlineColor={errors.date ? '#FF5252' : '#4CAF50'}
+                    activeOutlineColor={errors.date ? '#FF5252' : '#4CAF50'}
+                    error={!!errors.date}
+                    editable={false}
+                  />
                 </TouchableOpacity>
-              </Modal>
-            </View>
+                {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
+                {showDatePicker && (
+                  <DateTimePickerModal
+                    mode="datetime"
+                    onConfirm={handleDateChange}
+                    onCancel={() => setShowDatePicker(false)}
+                    locale="fr-FR"
+                    is24Hour={true}
+                    isVisible={showDatePicker}
+                    timeZoneName="Europe/Brussels"
+                  />
+                )}
+                {errors.time && (
+                  <Text style={styles.errorText}>{errors.time}</Text>
+                )}
+                {selectedDate && (
+                  <Text>
+                    Match prévu le {selectedDate.toLocaleString('fr-FR', { timeZone: 'Europe/Brussels' })}
+                  </Text>
+                )}
+              </View>
 
-            <View style={styles.inputContainer}>
-              <TouchableOpacity 
-                onPress={() => selectedCity && setFieldModalVisible(true)}
-                disabled={!selectedCity}
-              >
-                <TextInput
-                  label="Terrain"
-                  value={selectedFieldData ? `${selectedFieldData.name} - ${selectedFieldData.address}` : ''}
-                  placeholder="Sélectionner un terrain"
-                  style={styles.input}
-                  mode="outlined"
-                  left={<TextInput.Icon icon="map-marker" />}
-                  right={<TextInput.Icon icon="chevron-down" />}
-                  outlineColor="#6B4EFF"
-                  activeOutlineColor="#6B4EFF"
-                  editable={false}
-                  disabled={!selectedCity}
-                />
-              </TouchableOpacity>
-              <Modal
-                visible={fieldModalVisible}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setFieldModalVisible(false)}
-              >
+              <View style={styles.inputContainer}>
                 <TouchableOpacity 
-                  style={styles.modalContainer}
-                  activeOpacity={1}
-                  onPress={() => setFieldModalVisible(false)}
+                  onPress={() => setShowDurationModal(true)}
+                  style={styles.touchableInput}
                 >
-                  <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Sélectionner un terrain</Text>
-                      <IconButton
-                        icon="close"
-                        size={24}
-                        onPress={() => setFieldModalVisible(false)}
-                      />
-                    </View>
-                    {selectedCity && fields[selectedCity] ? (
-                      fields[selectedCity].map(field => (
+                  <TextInput
+                    label="Durée du match"
+                    value={`${duration} minutes`}
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="clock" />}
+                    right={<TextInput.Icon icon="chevron-down" />}
+                    outlineColor='#4CAF50'
+                    activeOutlineColor='#4CAF50'
+                    editable={false}
+                  />
+                </TouchableOpacity>
+                <Modal
+                  visible={showDurationModal}
+                  transparent
+                  animationType="slide"
+                  onRequestClose={() => setShowDurationModal(false)}
+                >
+                  <TouchableOpacity 
+                    style={styles.modalContainer}
+                    activeOpacity={1}
+                    onPress={() => setShowDurationModal(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Sélectionner la durée</Text>
+                        <IconButton
+                          icon="close"
+                          size={24}
+                          onPress={() => setShowDurationModal(false)}
+                        />
+                      </View>
+                      <ScrollView style={styles.modalScrollView}>
                         <List.Item
-                          key={field.id}
-                          title={`${field.name} - ${field.address}`}
+                          title="60 minutes"
                           onPress={() => {
-                            if (field.isAvailable) {
-                              setSelectedField(field.id);
-                              setFieldModalVisible(false);
-                            }
+                            setDuration('60');
+                            setShowDurationModal(false);
                           }}
-                          disabled={!field.isAvailable}
-                          style={[
-                            styles.listItem,
-                            !field.isAvailable && styles.listItemDisabled
-                          ]}
+                          style={styles.listItem}
                           left={props => (
                             <List.Icon 
                               {...props} 
-                              icon={field.isAvailable ? 'check-circle' : 'close-circle'} 
-                              color={field.isAvailable ? '#4CAF50' : '#F44336'}
+                              icon={duration === '60' ? "check-circle" : "circle-outline"}
+                              color="#4CAF50"
                             />
                           )}
                         />
-                      ))
-                    ) : (
-                      <View style={styles.noFieldsContainer}>
-                        <Text style={styles.noFieldsText}>Aucun terrain trouvé pour cette commune</Text>
-                      </View>
-                    )}
-                  </View>
+                        <List.Item
+                          title="90 minutes"
+                          onPress={() => {
+                            setDuration('90');
+                            setShowDurationModal(false);
+                          }}
+                          style={styles.listItem}
+                          left={props => (
+                            <List.Icon 
+                              {...props} 
+                              icon={duration === '90' ? "check-circle" : "circle-outline"}
+                              color="#4CAF50"
+                            />
+                          )}
+                        />
+                      </ScrollView>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="Nom de l'équipe 1 (optionnel)"
+                  value={team1Name}
+                  onChangeText={setTeam1Name}
+                  style={styles.input}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="account-group" />}
+                  outlineColor='#4CAF50'
+                  activeOutlineColor='#4CAF50'
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="Nom de l'équipe 2 (optionnel)"
+                  value={team2Name}
+                  onChangeText={setTeam2Name}
+                  style={styles.input}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="account-group" />}
+                  outlineColor='#4CAF50'
+                  activeOutlineColor='#4CAF50'
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TouchableOpacity 
+                  onPress={() => setCityModalVisible(true)}
+                  style={styles.touchableInput}
+                >
+                  <TextInput
+                    label="Commune"
+                    value={selectedCity?.name || ''}
+                    placeholder="Sélectionner une commune"
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="city" />}
+                    right={<TextInput.Icon icon="chevron-down" />}
+                    outlineColor={errors.city ? '#FF5252' : '#4CAF50'}
+                    activeOutlineColor={errors.city ? '#FF5252' : '#4CAF50'}
+                    error={!!errors.city}
+                    editable={false}
+                  />
                 </TouchableOpacity>
-              </Modal>
+                {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
+                <Modal
+                  visible={cityModalVisible}
+                  transparent
+                  animationType="slide"
+                  onRequestClose={() => setCityModalVisible(false)}
+                >
+                  <TouchableOpacity 
+                    style={styles.modalContainer}
+                    activeOpacity={1}
+                    onPress={() => setCityModalVisible(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Sélectionner une commune</Text>
+                        <IconButton
+                          icon="close"
+                          size={24}
+                          onPress={() => setCityModalVisible(false)}
+                        />
+                      </View>
+                      <ScrollView style={styles.modalScrollView}>
+                        {CITIES.map(city => (
+                          <List.Item
+                            key={city.id}
+                            title={city.name}
+                            onPress={() => {
+                              setSelectedCity({ id: city.id, name: city.name });
+                              setSelectedField(null);
+                              setCityModalVisible(false);
+                            }}
+                            style={styles.listItem}
+                          />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TouchableOpacity 
+                  onPress={handleFieldSelection}
+                  disabled={!isFieldSelectionEnabled}
+                >
+                  <TextInput
+                    label="Terrain"
+                    value={selectedFieldData ? `${selectedFieldData.name}` : ''}
+                    placeholder={!isFieldSelectionEnabled ? "Veuillez remplir les champs précédents" : (fieldsLoading ? "Chargement des terrains..." : "Sélectionner un terrain")}
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="map-marker" />}
+                    right={<TextInput.Icon icon="chevron-down" />}
+                    outlineColor={errors.field ? '#FF5252' : '#4CAF50'}
+                    activeOutlineColor={errors.field ? '#FF5252' : '#4CAF50'}
+                    error={!!errors.field}
+                    editable={false}
+                    disabled={!isFieldSelectionEnabled || fieldsLoading}
+                  />
+                </TouchableOpacity>
+                {errors.field && <Text style={styles.errorText}>{errors.field}</Text>}
+                <Modal
+                  visible={fieldModalVisible}
+                  transparent
+                  animationType="slide"
+                  onRequestClose={() => setFieldModalVisible(false)}
+                >
+                  <TouchableOpacity 
+                    style={styles.modalContainer}
+                    activeOpacity={1}
+                    onPress={() => setFieldModalVisible(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Sélectionner un terrain</Text>
+                        <IconButton
+                          icon="close"
+                          size={24}
+                          onPress={() => setFieldModalVisible(false)}
+                        />
+                      </View>
+                      <ScrollView style={styles.modalScrollView}>
+                        {fieldsLoading ? (
+                          <View style={styles.noFieldsContainer}>
+                            <Text style={styles.noFieldsText}>Chargement des terrains...</Text>
+                          </View>
+                        ) : fieldsError ? (
+                          <View style={styles.noFieldsContainer}>
+                            <Text style={styles.noFieldsText}>{fieldsError}</Text>
+                          </View>
+                        ) : fields.length > 0 ? (
+                          fields.map(field => (
+                            <List.Item
+                              key={field.id}
+                              title={`${field.name} - ${field.address}`}
+                              onPress={() => {
+                                setSelectedField(field.id);
+                                setFieldModalVisible(false);
+                              }}
+                              style={styles.listItem}
+                              left={props => (
+                                <List.Icon 
+                                  {...props} 
+                                  icon="check-circle"
+                                  color="#4CAF50"
+                                />
+                              )}
+                            />
+                          ))
+                        ) : (
+                          <View style={styles.noFieldsContainer}>
+                            <Text style={styles.noFieldsText}>Aucun terrain disponible pour ces critères</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="Nombre de joueurs"
+                  value={maxPlayers}
+                  style={styles.input}
+                  mode="outlined"
+                  left={<TextInput.Icon icon="account-group" />}
+                  outlineColor="#BDBDBD"
+                  activeOutlineColor="#BDBDBD"
+                  disabled={true}
+                />
+              </View>
+
+              <Button
+                mode="contained"
+                onPress={handleCreate}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                labelStyle={styles.buttonLabel}
+              >
+                Créer le match
+              </Button>
             </View>
-
-            <View style={styles.inputContainer}>
-              <TextInput
-                label="Nombre de joueurs"
-                value={maxPlayers}
-                onChangeText={setMaxPlayers}
-                keyboardType="numeric"
-                style={styles.input}
-                mode="outlined"
-                left={<TextInput.Icon icon="account-group" />}
-                outlineColor="#6B4EFF"
-                activeOutlineColor="#6B4EFF"
-              />
-            </View>
-
-          
-
-            <Button
-              mode="contained"
-              onPress={handleCreate}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
-            >
-              Créer le match
-            </Button>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -312,6 +602,13 @@ const styles = StyleSheet.create({
   },
   keyboardAvoid: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
   },
   content: {
     padding: 16,
@@ -338,6 +635,9 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     maxHeight: '80%',
   },
+  modalScrollView: {
+    maxHeight: '70%',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -353,9 +653,8 @@ const styles = StyleSheet.create({
   },
   listItem: {
     paddingVertical: 12,
-  },
-  listItemDisabled: {
-    opacity: 0.7,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
   },
   toggleContainer: {
     marginVertical: 8,
@@ -379,7 +678,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleButtonActive: {
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#4CAF50',
   },
   toggleButtonText: {
     fontSize: 14,
@@ -391,7 +690,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 24,
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
   buttonContent: {
@@ -413,6 +712,15 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  disabledItem: {
+    opacity: 0.6,
+  },
+  errorText: {
+    color: '#FF5252',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
 });
 
-export default CreateMatchScreen; 
+export default CreateMatchScreen;

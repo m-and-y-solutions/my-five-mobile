@@ -1,148 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
-import { Text, Button, Avatar, List, useTheme, Card, ActivityIndicator } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from '../../types/user.types';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { Text, Button, Avatar, List, useTheme, ActivityIndicator } from 'react-native-paper';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, MainTabParamList, ProfileStackParamList } from '../../types/navigation.types';
+import { RouteProp } from '@react-navigation/native';
+import { RootStackParamList, ProfileStackParamList } from '../../types/navigation.types';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
-import { AppDispatch } from '../../store';
-import { RootState } from '../../store';
+import { fetchUserStats, fetchUserSocial, fetchUserById } from '../../store/slices/userSlice';
+import { AppDispatch, RootState } from '../../store';
 import config from '../../config/config';
-import axios from 'axios';
-import { API_URL } from '../../config/config';
-import { MOCK_USERS } from '../../constants/mockdata.constantes';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList, 'ProfileMain'>;
-
-interface UserStats {
-  totalMatches: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  goalsScored: number;
-  assists: number;
-  ranking: number;
-  winRate: number;
-  averageGoalsPerMatch: number;
-  averageAssistsPerMatch: number;
-  currentStreak: number;
-  bestStreak: number;
-  favoritePosition: string;
-  totalPlayTime: number;
-  achievements: Array<{
-    id: string;
-    title: string;
-    description: string;
-    icon: string;
-    unlockedAt: string;
-  }>;
-}
-
-interface UserSocial {
-  groups: number;
-  following: number;
-  followers: number;
-}
+type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 
 const ProfileScreen = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const route = useRoute<ProfileScreenRouteProp>();
+  const { user: currentUser } = useSelector((state: RootState) => state.auth);
+  const { stats, social, loading, error, selectedUser } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const theme = useTheme();
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [social, setSocial] = useState<UserSocial>({ groups: 0, following: 0, followers: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [usingMockData, setUsingMockData] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserData();
-    }
-  }, [user]);
+  const userId = route.params?.userId || currentUser?.id;
+  const isCurrentUser = !route.params?.userId || route.params.userId === currentUser?.id;
+  const user = isCurrentUser ? currentUser : selectedUser;
+
+  // useEffect(() => {
+  //   console.log('--------',route.params?.userId, userId, currentUser?.id)
+  //   if (userId) {
+  //     console.log('navigation to userid',route.params?.userId,'current',currentUser?.id)
+  //     fetchUserData();
+  //   }
+  // }, [userId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+       console.log('--------',route.params, userId, currentUser?.id)
+
+      if (userId) {
+        console.log('Screen focused, fetching data for user:', userId);
+        fetchUserData();
+      }
+    }, [userId])
+  );
 
   const fetchUserData = async () => {
     try {
-      console.log('Fetching user data...');
-      setLoading(true);
-      setError('');
-      setUsingMockData(false);
+      console.log(isCurrentUser);
 
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        console.log('No token found');
-        setError('Please login to view profile');
-        return;
-      }
-
-      // Try to get user data from localStorage first
-      const storedUserData = await AsyncStorage.getItem('userData');
-      if (storedUserData) {
-        const userData = JSON.parse(storedUserData);
-        console.log('Using stored user data:', userData);
-        setStats(userData.stats);
-        setSocial(userData.social);
-      }
-
-      // Try to fetch fresh data from backend
-      try {
-        const [statsResponse, socialResponse] = await Promise.all([
-          axios.get(`${API_URL}/users/stats`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${API_URL}/users/social`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        console.log('Fresh data fetched successfully');
-        setStats(statsResponse.data);
-        setSocial(socialResponse.data);
-
-        // Update localStorage with fresh data
-        await AsyncStorage.setItem('userData', JSON.stringify({
-          stats: statsResponse.data,
-          social: socialResponse.data,
-        }));
-      } catch (err: any) {
-        console.error('Error fetching fresh data:', err);
-        if (!storedUserData) {
-          // If no stored data and backend fails, use mock data
-          console.log('Using mock data instead...');
-          setUsingMockData(true);
-          setStats({
-            totalMatches: 15,
-            wins: 10,
-            losses: 3,
-            draws: 2,
-            goalsScored: 25,
-            assists: 15,
-            ranking: 0,
-            winRate: 66.67,
-            averageGoalsPerMatch: 1.67,
-            averageAssistsPerMatch: 1.0,
-            currentStreak: 3,
-            bestStreak: 5,
-            favoritePosition: 'Forward',
-            totalPlayTime: 1350,
-            achievements: [],
-          });
-          setSocial({
-            groups: 3,
-            following: 100,
-            followers: 150,
-          });
-        }
+      if (isCurrentUser) {
+        await dispatch(fetchUserStats());
+        await dispatch(fetchUserSocial());
+      } else {
+        await dispatch(fetchUserById(userId));
       }
     } catch (err: any) {
       console.error('Error in fetchUserData:', err);
-      setError(err.response?.data?.message || 'Failed to load profile data');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -167,7 +82,7 @@ const ProfileScreen = () => {
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
@@ -180,129 +95,139 @@ const ProfileScreen = () => {
           mode="contained"
           onPress={fetchUserData}
           style={styles.retryButton}
+          buttonColor="#4CAF50"
         >
-          Retry
+          Réessayer
         </Button>
       </View>
     );
   }
 
   return (
+    
     <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {usingMockData && (
-        <View style={styles.mockDataWarning}>
-          <Text style={styles.mockDataText}>
-            Using mock data - {error}
+      <View style={styles.profileCard}>
+        <View style={styles.avatarContainer}>
+          <Avatar.Image
+            size={100}
+            source={
+              user.profileImage
+                ? { uri: config.serverUrl + user.profileImage }
+                : require('../../../assets/default-avatar.png')
+            }
+            style={styles.avatar}
+          />
+          <Text variant="titleLarge" style={styles.name}>
+            {user.firstName} {user.lastName}
+          </Text>
+          <Text variant="bodyMedium" style={styles.email}>
+            {user.email}
           </Text>
         </View>
-      )}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.avatarContainer}>
-            <Avatar.Image
-              size={80}
-              source={
-                user.profileImage
-                  ? { uri: config.serverUrl + user.profileImage }
-                  : require('../../../assets/default-avatar.png')
-              }
-            />
-            <Text variant="titleMedium" style={styles.name}>
-              {user.firstName} {user.lastName}
-            </Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{social?.groups || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Groupes</Text>
           </View>
-          <View style={styles.statsContainer}>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social.groups}</Text>
-                <Text variant="bodyMedium">Groupes</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social.following}</Text>
-                <Text variant="bodyMedium">Suivis</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{social.followers}</Text>
-                <Text variant="bodyMedium">Abonnés</Text>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{stats?.totalMatches || 0}</Text>
-                <Text variant="bodyMedium">Matchs</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{user.score}</Text>
-                <Text variant="bodyMedium">Score</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text variant="titleLarge" style={styles.statNumber}>{user.ranking}</Text>
-                <Text variant="bodyMedium">Classement</Text>
-              </View>
-            </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{social?.following || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Suivis</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>{social?.followers || 0}</Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Abonnés</Text>
+          </View>
+        </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>
+              {isCurrentUser ? (stats?.totalMatches || 0) : (selectedUser?.stats?.totalMatches || 0)}
+            </Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Matchs</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>
+              {isCurrentUser ? (stats?.wins || 0) : (selectedUser?.stats?.wins || 0)}
+            </Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Victoires</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text variant="titleLarge" style={styles.statValue}>
+              {isCurrentUser ? (stats?.goalsScored || 0) : (selectedUser?.stats?.goalsScored || 0)}
+            </Text>
+            <Text variant="bodyMedium" style={styles.statLabel}>Buts</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
-          Informations du profil
-        </Text>
-        <List.Item
-          title="Email"
-          description={user.email}
-          left={props => <List.Icon {...props} icon="email" />}
-        />
-        <List.Item
-          title="Modifier le profil"
-          description="Mettre à jour vos informations personnelles"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
-        />
+      {isCurrentUser && (
+        <>
+          <View style={styles.section}>
+            <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
+              Informations du profil
+            </Text>
+            <List.Item
+              title="Email"
+              description={user.email}
+              left={props => <List.Icon {...props} icon="email" color="#4CAF50" />}
+            />
+            <List.Item
+              title="Modifier le profil"
+              description="Mettre à jour vos informations personnelles"
+              left={props => <List.Icon {...props} icon="account-edit" color="#4CAF50" />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+            />
+            <List.Item
+              title="Préférences"
+              description="Définir vos préférences de match"
+              left={props => <List.Icon {...props} icon="cog" color="#4CAF50" />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+            />
+          </View>
 
-        <List.Item
-          title="Préférences"
-          description="Définir vos préférences de match"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
-        />
-      </View>
+          <View style={styles.section}>
+            <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
+              Activité
+            </Text>
+            <List.Item
+              title="Mes matchs"
+              description="Voir mes matchs à venir et passés"
+              left={props => <List.Icon {...props} icon="soccer" color="#4CAF50" />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
+            />
+            <List.Item
+              title="Statistiques"
+              description="Voir mes statistiques et réalisations"
+              left={props => <List.Icon {...props} icon="chart-line" color="#4CAF50" />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              onPress={() => navigation.navigate('UserStats')}
+            />
+            <List.Item
+              title="Groupes"
+              description="Gérer vos groupes"
+              left={props => <List.Icon {...props} icon="account-group" color="#4CAF50" />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+            />
+          </View>
 
-      <View style={styles.section}>
-        <Text variant="titleLarge" style={styles.sectionTitle}>
-          Activité
-        </Text>
-        <List.Item
-          title="Mes matchs"
-          description="Voir mes matchs à venir et passés"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
-        />
-        <List.Item
-          title="Statistiques"
-          description="Voir mes statistiques et réalisations"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
-          onPress={() => navigation.navigate('UserStats')}
-        />
-        <List.Item
-          title="Groupes"
-          description="Gérer vos groupes"
-          right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" />}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Button
-          mode="outlined"
-          onPress={handleLogout}
-          style={styles.logoutButton}
-        >
-          Déconnexion
-        </Button>
-      </View>
+          <View style={styles.section}>
+            <Button
+              mode="contained"
+              onPress={handleLogout}
+              style={styles.logoutButton}
+              buttonColor="red"
+            >
+              Déconnexion
+            </Button>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 };
@@ -311,6 +236,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+
   },
   centerContainer: {
     flex: 1,
@@ -328,33 +254,70 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 15,
   },
+  profileCard: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    margin: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   avatarContainer: {
     marginRight: 20,
     alignItems: 'center',
   },
-  statsContainer: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    padding: 10,
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
   },
+  email: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+    flexWrap: 'wrap',
+  },
+  statItem: {
+    alignItems: 'center',
+    width: '30%',
+    marginBottom: 15,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 10,
   },
-  statItem: {
-    alignItems: 'center',
-    minWidth: 60,
-  },
   statNumber: {
     fontWeight: 'bold',
-    color: '#6B4EFF',
+    color: '#4CAF50',
   },
   name: {
     fontWeight: 'bold',
     marginTop: 8,
     textAlign: 'center',
+    color: '#4CAF50',
   },
   section: {
     marginTop: 20,
@@ -366,10 +329,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 15,
-    color: '#333',
+    color: '#4CAF50',
   },
   logoutButton: {
-    borderColor: '#ff4444',
+    marginTop: 10,
+    borderRadius: 8,
   },
   errorText: {
     color: 'red',
@@ -377,18 +341,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 8,
-  },
-  mockDataWarning: {
-    backgroundColor: '#fff3cd',
-    padding: 8,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 4,
-  },
-  mockDataText: {
-    color: '#856404',
-    textAlign: 'center',
-    fontSize: 12,
+    borderRadius: 8,
   },
 });
 

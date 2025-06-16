@@ -1,29 +1,14 @@
 {
   "expo": {
-    "name": "My Five",
-    "slug": "my-five",
+    "name": "MyFive",
+    "slug": "myfive",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "sdkVersion": "53.0.9",
     "icon": "./assets/my-five-icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/my-five-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/my-five-icon.png"
     }
   }
 }

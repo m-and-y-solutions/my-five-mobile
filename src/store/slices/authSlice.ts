@@ -8,14 +8,15 @@ export const restoreAuth = createAsyncThunk(
   'auth/restore',
   async () => {
     try {
-      const [token, userStr] = await Promise.all([
-        AsyncStorage.getItem('token'),
+      const [accessToken, refreshToken, userStr] = await Promise.all([
+        AsyncStorage.getItem('accessToken'),
+        AsyncStorage.getItem('refreshToken'),
         AsyncStorage.getItem('user')
       ]);
       
-      if (token && userStr) {
+      if (accessToken && refreshToken && userStr) {
         const user = JSON.parse(userStr);
-        return { token, user };
+        return { accessToken, refreshToken, user };
       }
       return null;
     } catch (error) {
@@ -29,13 +30,12 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials) => {
     const response = await authService.login(credentials);
-    if (response.success && response.data?.token) {
-      await AsyncStorage.setItem('token', response.data.token);
+    if (response.success && response.data?.accessToken && response.data?.refreshToken) {
       if (response.data.user) {
         await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
       }
     } else {
-      console.error('Login response missing token:', response);
+      console.error('Login response missing tokens:', response);
     }
     return response;
   }
@@ -45,47 +45,50 @@ export const register = createAsyncThunk(
   'auth/register',
   async (data: RegisterData) => {
     const response = await authService.register(data);
-    if (response.success && response.data?.token) {
-      console.log('Storing token:', response.data.token);
-      await AsyncStorage.setItem('token', response.data.token);
-      if (response.data.user) {
-        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-    } else {
-      console.error('Register response missing token:', response);
+    // if (response.success && response.data?.accessToken && response.data?.refreshToken) {
+    //   if (response.data.user) {
+    //     await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+    //   }
+    // } else {
+    //   console.error('Register response missing tokens:', response);
+    // }
+    return response;
+  }
+);
+
+export const refreshToken = createAsyncThunk(
+  'auth/refreshToken',
+  async () => {
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
     }
+    const response = await authService.refreshToken(refreshToken);
     return response;
   }
 );
 
 export const logout = createAsyncThunk(
   'auth/logout',
-  async (_, { dispatch }) => {
-    try {
-      // Nettoyer le stockage local
-      await AsyncStorage.multiRemove(['token', 'user',]);
-      // Nettoyer le stockage local todo remove after testing
-      await AsyncStorage.removeItem('onboardingSeen');
-      // Retourner un objet pour indiquer le succès
-      return { success: true };
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
-      throw error;
-    }
+  async () => {
+    const response = await authService.logout();
+    return response;
   }
 );
 
 interface AuthState {
+  accessToken: string | null;
+  refreshToken: string | null;
   user: any | null;
-  token: string | null;
   loading: boolean;
   error: string | null;
   hasSeenOnboarding: boolean;
 }
 
 const initialState: AuthState = {
+  accessToken: null,
+  refreshToken: null,
   user: null,
-  token: null,
   loading: false,
   error: null,
   hasSeenOnboarding: false,
@@ -95,23 +98,33 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    setOnboardingSeen: (state, action: { payload: boolean }) => {
+      state.hasSeenOnboarding = action.payload;
+    },
     clearError: (state) => {
       state.error = null;
-    },
-    setOnboardingSeen: (state, action) => {
-      state.hasSeenOnboarding = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Restore auth cases
+      // Restore Auth
+      .addCase(restoreAuth.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(restoreAuth.fulfilled, (state, action) => {
+        state.loading = false;
         if (action.payload) {
-          state.token = action.payload.token;
+          state.accessToken = action.payload.accessToken;
+          state.refreshToken = action.payload.refreshToken;
           state.user = action.payload.user;
         }
       })
-      // Login cases
+      .addCase(restoreAuth.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to restore auth state';
+      })
+      // Login
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -119,17 +132,18 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         if (action.payload.success) {
+          state.accessToken = action.payload.data.accessToken;
+          state.refreshToken = action.payload.data.refreshToken;
           state.user = action.payload.data.user;
-          state.token = action.payload.data.token;
         } else {
           state.error = action.payload.message;
         }
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Une erreur est survenue';
+        state.error = action.error.message || 'Login failed';
       })
-      // Register cases
+      // Register
       .addCase(register.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -137,32 +151,64 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
         if (action.payload.success) {
+          state.accessToken = action.payload.data.accessToken;
+          state.refreshToken = action.payload.data.refreshToken;
           state.user = action.payload.data.user;
-          state.token = action.payload.data.token;
         } else {
           state.error = action.payload.message;
         }
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Une erreur est survenue';
+        state.error = action.error.message || 'Registration failed';
       })
-      // Logout cases
-      .addCase(logout.pending, (state) => {
+      // Refresh Token
+      .addCase(refreshToken.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(logout.fulfilled, (state) => {
+      .addCase(refreshToken.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = null;
-        state.token = null;
+        if (action.payload.success && action.payload.data) {
+          state.accessToken = action.payload.data.accessToken;
+          state.refreshToken = action.payload.data.refreshToken;
+        } else {
+          state.error = action.payload.message;
+          state.accessToken = null;
+          state.refreshToken = null;
+          state.user = null;
+        }
       })
-      .addCase(logout.rejected, (state, action) => {
+      .addCase(refreshToken.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Une erreur est survenue lors de la déconnexion';
+        state.error = action.error.message || 'Token refresh failed';
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.user = null;
+      })
+      // Logout
+      .addCase(logout.fulfilled, (state) => {
+        console.log('🔒 Auth Store - Before logout:', {
+          accessToken: state.accessToken ? 'Present' : 'Missing',
+          refreshToken: state.refreshToken ? 'Present' : 'Missing',
+          user: state.user ? 'Present' : 'Missing'
+        });
+        
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.user = null;
+        state.error = null;
+        // state.hasSeenOnboarding = false; // Remettre à false lors du logout
+        
+        console.log('🧹 Auth Store - After logout:', {
+          accessToken: state.accessToken ? 'Present' : 'Missing',
+          refreshToken: state.refreshToken ? 'Present' : 'Missing',
+          user: state.user ? 'Present' : 'Missing'
+        });
       });
   },
 });
 
-export const { clearError, setOnboardingSeen } = authSlice.actions;
-export default authSlice.reducer; 
+export const { setOnboardingSeen, clearError } = authSlice.actions;
+
+export default authSlice.reducer;

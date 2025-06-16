@@ -1,11 +1,12 @@
 const config = {
-  apiUrl: 'http://192.168.1.18:3000/api',
-  serverUrl: 'http://192.168.1.18:3000',
+  apiUrl: 'https://my-five-server.onrender.com/api',
+  serverUrl: 'https://my-five-server.onrender.com',
+  //  apiUrl: 'http://192.168.1.16:3000/api',
+  // serverUrl: 'http://192.168.1.16:3000',
 };
 
 export default config;
 
-export const API_URL = 'http://localhost:3000/api';
 
 export const MATCH_TYPES = {
   FRIENDLY: 'friendly',
