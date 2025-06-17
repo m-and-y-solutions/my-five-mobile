@@ -3,15 +3,12 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Button, useTheme, ActivityIndicator, Text, Searchbar, FAB, Chip, Icon } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../../navigation/types';
 import { Match } from '../../services/matchService';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchAllMatches, fetchUserMatches, resetMatches } from '../../store/slices/matchSlice';
 import MatchCard from '../../components/MatchCard';
-import config from 'config/config';
-import { MOCK_MATCHES } from '../../constants/mockdata.constantes';
 
 type MatchesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 type MatchesScreenRouteProp = RouteProp<RootStackParamList, 'Matches'>;

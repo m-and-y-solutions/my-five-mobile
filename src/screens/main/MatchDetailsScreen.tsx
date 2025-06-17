@@ -301,6 +301,9 @@ const MatchDetailsScreen = () => {
           { label: "Terminé", value: "completed" },
           { label: "Annulé", value: "cancelled" },
         ];
+      case "completed":
+      case "cancelled":
+        return [];
       default:
         return [];
     }
