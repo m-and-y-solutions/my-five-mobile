@@ -1,7 +1,6 @@
 import config from '../config/config';
 import { LoginCredentials, RegisterData } from '../types/auth.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setOnboardingSeen } from 'store/slices/authSlice';
 import api from './api';
 
 const authService = {
@@ -12,7 +11,7 @@ const authService = {
       console.log('✅ Login response received:', response.data);
       //todo remove
             await AsyncStorage.multiRemove(['onboardingSeen']);
-            setOnboardingSeen(false);
+            await AsyncStorage.setItem('onboardingSeen', 'false');
 
       
       if (!response.data?.data?.accessToken || !response.data?.data?.refreshToken) {

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from 'config/config';
-import authService from './authService';
 
 const api = axios.create({
   baseURL: config.apiUrl,
@@ -40,11 +39,16 @@ api.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        const response = await authService.refreshToken(refreshToken);
-        if (!response.success || !response.data) {
-          throw new Error('Failed to refresh token');
+        // Call refresh token endpoint directly
+        const response = await axios.post(`${config.apiUrl}/auth/refresh-token`, {
+          refreshToken
+        });
+        
+        if (!response.data?.data?.accessToken) {
+          throw new Error('No access token in response');
         }
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
         // Store new tokens
         await AsyncStorage.setItem('accessToken', accessToken);
@@ -57,7 +61,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // If refresh token fails, clear storage
-        await authService.clearTokens();
+        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
         return Promise.reject(refreshError);
       }
     }

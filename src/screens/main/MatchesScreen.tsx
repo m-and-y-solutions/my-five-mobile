@@ -76,7 +76,8 @@ const MatchesScreen = () => {
 
     const matchesFilters = activeFilters.length === 0 || 
       (activeFilters.includes('created') && isCreator) ||
-      (activeFilters.includes('participating') && isParticipant);
+      (activeFilters.includes('participating') && isParticipant) ||
+      (activeFilters.includes('cancelled') && match.status === 'cancelled');
 
     const matchesVisibility = visibilityFilter === 'all' || match.visibility === visibilityFilter;
 
@@ -186,6 +187,14 @@ const MatchesScreen = () => {
                 selectedColor="#4CAF50"
               >
                 Vos participations
+              </Chip>
+              <Chip
+                selected={activeFilters.includes('cancelled')}
+                onPress={() => toggleFilter('cancelled')}
+                style={styles.filterChip}
+                selectedColor="#4CAF50"
+              >
+               Annulés
               </Chip>
             </View>
             {route.params?.isUserMatches && (

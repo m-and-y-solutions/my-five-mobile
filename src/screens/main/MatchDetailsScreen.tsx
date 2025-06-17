@@ -293,9 +293,14 @@ const MatchDetailsScreen = () => {
         return [
           { label: "En cours", value: "ongoing" },
           { label: "Terminé", value: "completed" },
+          { label: "Annulé", value: "cancelled" },
+
         ];
       case "ongoing":
-        return [{ label: "Terminé", value: "completed" }];
+        return [
+          { label: "Terminé", value: "completed" },
+          { label: "Annulé", value: "cancelled" },
+        ];
       default:
         return [];
     }

@@ -47,7 +47,7 @@ const RegisterScreen = () => {
 
   const handleImageSelected = (data: FormData) => {
     //to do test register xith image
-    const image = data.getAll()[0] as unknown as File;
+    const image = data.getAll('image')[0] as unknown as File;
     setprofileImage(image);
   };
 
