@@ -101,7 +101,7 @@ const MainTabs = () => {
         component={HomeScreen}
         options={{
           title: "Accueil",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <IconButton icon="home" size={size} iconColor={color} />
           ),
         }}
@@ -111,7 +111,7 @@ const MainTabs = () => {
         component={MatchesScreen}
         options={{
           title: "Matchs",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <IconButton icon="soccer" size={size} iconColor={color} />
           ),
         }}
@@ -121,7 +121,7 @@ const MainTabs = () => {
         component={ProfileNavigator}
         options={{
           title: "Profil",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <IconButton icon="account" size={size} iconColor={color} />
           ),
         }}
@@ -141,13 +141,15 @@ const Navigation = () => {
   React.useEffect(() => {
     const init = async () => {
       try {
+        console.log('🔄 Navigation - Starting auth restoration...');
         await dispatch(restoreAuth());
         const onboardingSeen = await AsyncStorage.getItem("onboardingSeen");
+        console.log('📱 Navigation - Onboarding seen:', onboardingSeen);
         if (onboardingSeen === "true") {
           dispatch(setOnboardingSeen(true));
         }
       } catch (error) {
-        console.error("Error initializing app:", error);
+        console.error('❌ Navigation - Error initializing app:', error);
       } finally {
         setIsLoading(false);
       }
@@ -156,15 +158,14 @@ const Navigation = () => {
     init();
   }, [dispatch]);
 
-  // Ajoute ce log ici
-  console.log(
-    "Navigation - accessToken:",
-    accessToken,
-    "hasSeenOnboarding:",
-    hasSeenOnboarding
-  );
+  console.log('🔑 Navigation State:', {
+    accessToken: accessToken ? "Present" : "Missing",
+    hasSeenOnboarding,
+    isLoading
+  });
 
   if (isLoading) {
+    console.log('⏳ Navigation - Still loading...');
     return null;
   }
 

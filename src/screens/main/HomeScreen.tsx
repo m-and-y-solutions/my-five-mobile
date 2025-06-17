@@ -89,16 +89,6 @@ const HomeScreen = () => {
       );
     }
 
-    const now = Date.now();
-    const filteredMatches = matches.filter((match) => {
-      const matchStart = new Date(match.date).getTime();
-      const matchEnd = matchStart + (match.duration || 0) * 60000;
-      // console.log(
-      //   `Match: ${match.id} | Date: ${match.date} | Start: ${matchStart} | End: ${matchEnd} | Now: ${now} | Show: ${matchEnd >= now}`
-      // );
-      return matchEnd >= now;
-    });
-
     return (
       <>
         <View style={styles.titleContainer}>
@@ -114,7 +104,7 @@ const HomeScreen = () => {
           </Button>
         </View>
         <FlatList
-          data={filteredMatches}
+          data={matches}
           renderItem={({ item }) => (
             <MatchCard
               match={item}
