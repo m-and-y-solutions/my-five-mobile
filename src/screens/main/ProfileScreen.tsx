@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Button, Avatar, List, useTheme, ActivityIndicator } from 'react-native-paper';
+import { Text, Button, Avatar, List, useTheme, ActivityIndicator, MD3Theme } from 'react-native-paper';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -73,7 +73,7 @@ const ProfileScreen = () => {
 
   if (!user) {
     return (
-      <View style={styles.container}>
+      <View style={styles(theme).container}>
         <Text>Chargement...</Text>
       </View>
     );
@@ -81,21 +81,21 @@ const ProfileScreen = () => {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={styles(theme).centerContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   if (error && !stats) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={styles(theme).centerContainer}>
+        <Text style={styles(theme).errorText}>{error}</Text>
         <Button
           mode="contained"
           onPress={fetchUserData}
-          style={styles.retryButton}
-          buttonColor="#4CAF50"
+          style={styles(theme).retryButton}
+          buttonColor={theme.colors.primary}
         >
           Réessayer
         </Button>
@@ -106,13 +106,13 @@ const ProfileScreen = () => {
   return (
     
     <ScrollView
-      style={styles.container}
+      style={styles(theme).container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
       }
     >
-      <View style={styles.profileCard}>
-        <View style={styles.avatarContainer}>
+      <View style={styles(theme).profileCard}>
+        <View style={styles(theme).avatarContainer}>
           <Avatar.Image
             size={100}
             source={
@@ -120,108 +120,120 @@ const ProfileScreen = () => {
                 ? { uri: config.serverUrl + user.profileImage }
                 : require('../../../assets/default-avatar.png')
             }
-            style={styles.avatar}
+            style={styles(theme).avatar}
           />
-          <Text variant="titleLarge" style={styles.name}>
+          <Text variant="titleLarge" style={styles(theme).name}>
             {user.firstName} {user.lastName}
           </Text>
-          <Text variant="bodyMedium" style={styles.email}>
+          <Text variant="bodyMedium" style={styles(theme).email}>
             {user.email}
           </Text>
         </View>
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>{social?.groups || 0}</Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Groupes</Text>
+        <View style={styles(theme).statsContainer}>
+          <View style={styles(theme).statItem}>
+            <Text variant="titleLarge" style={styles(theme).statValue}>{social?.groups || 0}</Text>
+            <Text variant="bodyMedium" style={styles(theme).statLabel}>Groupes</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>{social?.following || 0}</Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Suivis</Text>
+          <View style={styles(theme).statItem}>
+            <Text variant="titleLarge" style={styles(theme).statValue}>{social?.following || 0}</Text>
+            <Text variant="bodyMedium" style={styles(theme).statLabel}>Suivis</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>{social?.followers || 0}</Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Abonnés</Text>
+          <View style={styles(theme).statItem}>
+            <Text variant="titleLarge" style={styles(theme).statValue}>{social?.followers || 0}</Text>
+            <Text variant="bodyMedium" style={styles(theme).statLabel}>Abonnés</Text>
           </View>
         </View>
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>
+        <View style={styles(theme).statsContainer}>
+          <View style={styles(theme).statItem}>
+            <Text variant="titleLarge" style={styles(theme).statValue}>
               {isCurrentUser ? (stats?.totalMatches || 0) : (selectedUser?.stats?.totalMatches || 0)}
             </Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Matchs</Text>
+            <Text variant="bodyMedium" style={styles(theme).statLabel}>Matchs</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>
+          <View style={styles(theme).statItem}>
+            <Text variant="titleLarge" style={styles(theme).statValue}>
               {isCurrentUser ? (stats?.wins || 0) : (selectedUser?.stats?.wins || 0)}
             </Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Victoires</Text>
+            <Text variant="bodyMedium" style={styles(theme).statLabel}>Victoires</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text variant="titleLarge" style={styles.statValue}>
+          <View style={styles(theme).statItem}>
+            <Text variant="titleLarge" style={styles(theme).statValue}>
               {isCurrentUser ? (stats?.goalsScored || 0) : (selectedUser?.stats?.goalsScored || 0)}
             </Text>
-            <Text variant="bodyMedium" style={styles.statLabel}>Buts</Text>
+            <Text variant="bodyMedium" style={styles(theme).statLabel}>Buts</Text>
           </View>
         </View>
       </View>
 
       {isCurrentUser && (
         <>
-          <View style={styles.section}>
-            <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
+          <View style={styles(theme).section}>
+            <Text variant="titleLarge" style={[styles(theme).sectionTitle, { color: theme.colors.onSurface }]}>
               Informations du profil
             </Text>
             <List.Item
               title="Email"
+              titleStyle={{ color: theme.colors.onSurface }}
               description={user.email}
-              left={props => <List.Icon {...props} icon="email" color="#4CAF50" />}
+              descriptionStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="email" color={theme.colors.primary} />}
             />
             <List.Item
               title="Modifier le profil"
+              titleStyle={{ color: theme.colors.onSurface }}
               description="Mettre à jour vos informations personnelles"
-              left={props => <List.Icon {...props} icon="account-edit" color="#4CAF50" />}
-              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              descriptionStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="account-edit" color={theme.colors.primary} />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
             />
             <List.Item
               title="Préférences"
+              titleStyle={{ color: theme.colors.onSurface }}
               description="Définir vos préférences de match"
-              left={props => <List.Icon {...props} icon="cog" color="#4CAF50" />}
-              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              descriptionStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="cog" color={theme.colors.primary} />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
             />
           </View>
 
-          <View style={styles.section}>
-            <Text variant="titleLarge" style={[styles.sectionTitle, { color: "#000000" }]}>
+          <View style={styles(theme).section}>
+            <Text variant="titleLarge" style={[styles(theme).sectionTitle, { color: theme.colors.onSurface }]}>
               Activité
             </Text>
             <List.Item
               title="Mes matchs"
+              titleStyle={{ color: theme.colors.onSurface }}
               description="Voir mes matchs à venir et passés"
-              left={props => <List.Icon {...props} icon="soccer" color="#4CAF50" />}
-              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              descriptionStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="soccer" color={theme.colors.primary} />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('Matches', { isUserMatches: true })}
             />
             <List.Item
               title="Statistiques"
+              titleStyle={{ color: theme.colors.onSurface }}
               description="Voir mes statistiques et réalisations"
-              left={props => <List.Icon {...props} icon="chart-line" color="#4CAF50" />}
-              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              descriptionStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="chart-line" color={theme.colors.primary} />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('UserStats')}
             />
             <List.Item
               title="Groupes"
+              titleStyle={{ color: theme.colors.onSurface }}
               description="Gérer vos groupes"
-              left={props => <List.Icon {...props} icon="account-group" color="#4CAF50" />}
-              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color="#4CAF50" />}
+              descriptionStyle={{ color: theme.colors.onSurface }}
+              left={props => <List.Icon {...props} icon="account-group" color={theme.colors.primary} />}
+              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
             />
           </View>
 
-          <View style={styles.section}>
+          <View style={styles(theme).section}>
             <Button
               mode="contained"
               onPress={handleLogout}
-              style={styles.logoutButton}
-              buttonColor="red"
+              style={styles(theme).logoutButton}
+              buttonColor={theme.colors.error}
             >
               Déconnexion
             </Button>
@@ -232,116 +244,86 @@ const ProfileScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: MD3Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
 
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 15,
+    borderBottomColor: theme.colors.outline, 
   },
   profileCard: {
-    backgroundColor: 'white',
-    borderRadius: 15,
+    backgroundColor: theme.colors.surface, 
     padding: 20,
     margin: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    borderRadius: 12,
+    elevation: 3,
+    alignItems: "center",
   },
   avatarContainer: {
-    marginRight: 20,
-    alignItems: 'center',
+    alignItems: "center",
+    marginBottom: 16,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-  },
-  email: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 10,
-    flexWrap: 'wrap',
-  },
-  statItem: {
-    alignItems: 'center',
-    width: '30%',
-    marginBottom: 15,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
-  },
-  statNumber: {
-    fontWeight: 'bold',
-    color: '#4CAF50',
+    marginBottom: 8,
   },
   name: {
-    fontWeight: 'bold',
-    marginTop: 8,
-    textAlign: 'center',
-    color: '#4CAF50',
+    fontWeight: "bold",
+    color: theme.colors.onSurface, 
+  },
+  email: {
+    color: theme.colors.onSurface, 
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 16,
+  },
+  statItem: {
+    alignItems: "center",
+  },
+  statValue: {
+    fontWeight: "bold",
+    color: theme.colors.onSurface, 
+  },
+  statLabel: {
+    color: theme.colors.onSurface, 
   },
   section: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginHorizontal: 15,
+    backgroundColor: theme.colors.surface, 
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
     elevation: 2,
   },
   sectionTitle: {
-    marginBottom: 15,
-    color: '#4CAF50',
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: theme.colors.onSurface, 
   },
   logoutButton: {
-    marginTop: 10,
+    marginTop: 20,
     borderRadius: 8,
   },
   errorText: {
-    color: 'red',
+    color: theme.colors.error, 
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 8,
     borderRadius: 8,
+    backgroundColor: theme.colors.primary,
   },
 });
 

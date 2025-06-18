@@ -20,6 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../store";
 import { fetchAllMatches, resetMatches } from "../../store/slices/matchSlice";
 import MatchCard from "../../components/MatchCard";
+import { LightTheme as theme } from "../../theme";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -138,7 +139,7 @@ const HomeScreen = () => {
       {renderContent()}
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: "#4CAF50" }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         onPress={() => navigation.navigate("CreateMatch")}
         color="#fff"
       />
@@ -149,10 +150,10 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.background,
   },
   titleContainer: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -171,15 +172,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 16,
-    color: "#4CAF50",
+    color: theme.colors.primary,
   },
   emptyText: {
     textAlign: "center",
-    color: "#666",
+    color: theme.colors.onSurface,
     marginVertical: 16,
   },
   errorText: {
-    color: "red",
+    color: theme.colors.error,
     textAlign: "center",
   },
   centerContainer: {
@@ -190,6 +191,7 @@ const styles = StyleSheet.create({
   retryButton: {
     marginTop: 8,
     borderRadius: 8,
+    backgroundColor: theme.colors.primary,
   },
   fab: {
     position: "absolute",
