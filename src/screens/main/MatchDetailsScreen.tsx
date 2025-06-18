@@ -439,7 +439,7 @@ const MatchDetailsScreen = () => {
             />
           </View>
           <View style={styles.headerActions}>
-            {isCreator && selectedMatch?.status !== "completed" && (
+            {isCreator && selectedMatch?.status !== "completed" && selectedMatch?.status !== "cancelled" && (
               <Menu
                 visible={statusMenuVisible}
                 onDismiss={() => setStatusMenuVisible(false)}

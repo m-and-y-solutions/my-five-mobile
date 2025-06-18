@@ -115,7 +115,7 @@ const RegisterScreen = () => {
         <View style={styles.contentContainer}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../assets/My-Five-Logo-black.png')}
+              source={require('../../../assets/My-Five-Logo-green-black.png')}
               style={styles.logo}
               resizeMode="contain"
             />

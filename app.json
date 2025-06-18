@@ -3,9 +3,9 @@
     "name": "MyFiveMobile",
     "slug": "my-five-mobile",
     "version": "1.0.0",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/my-five-icon-green.png",
     "splash": {
-      "image": "./assets/my-five-splash.png",
+      "image": "./assets/my-five-splash-green.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -13,7 +13,7 @@
       "package": "com.myfive.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/my-five-icon-green.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [],

@@ -33,7 +33,7 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../../assets/My-Five-Logo-black.png')}
+            source={require('../../../assets/My-Five-Logo-green-black.png')}
             style={styles.logo}
             resizeMode="contain"
           />
