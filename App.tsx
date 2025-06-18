@@ -7,6 +7,7 @@ import Navigation from './src/navigation';
 import { store } from './src/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LogBox, View, Text } from 'react-native';
+import { LightTheme } from './src/theme';
 
 // Ignore specific warnings
 LogBox.ignoreLogs([
@@ -67,7 +68,7 @@ export default function App() {
     <ErrorBoundary>
       <Provider store={store}>
         <SafeAreaProvider>
-          <PaperProvider>
+          <PaperProvider theme={LightTheme}>
             <NavigationContainer>
               <Navigation />
             </NavigationContainer>
