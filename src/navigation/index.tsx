@@ -171,7 +171,7 @@ const Navigation = () => {
         console.log('🔄 Navigation - Starting auth restoration...');
         await dispatch(restoreAuth());
         const onboardingSeen = await AsyncStorage.getItem("onboardingSeen");
-        console.log('📱 Navigation - Onboarding seen:', onboardingSeen);
+        console.log('📱 Navigation - Onboarding seen:', {hasSeenOnboarding},{onboardingSeen});
         if (onboardingSeen === "true") {
           dispatch(setOnboardingSeen(true));
         }

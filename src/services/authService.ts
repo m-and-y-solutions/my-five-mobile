@@ -8,7 +8,6 @@ const authService = {
     try {
       console.log('🔑 Starting login process...');
       const response = await api.post(`${config.apiUrl}/auth/login`, credentials);
-      console.log('✅ Login response received:', response.data);
       //todo remove
             await AsyncStorage.multiRemove(['onboardingSeen']);
             await AsyncStorage.setItem('onboardingSeen', 'false');
@@ -156,7 +155,7 @@ const authService = {
       });
       console.log('✅ Backend logout successful');
 
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user', 'token','onboardingSeen']);
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user', 'token']);
       console.log('🧹 Local storage cleared');
       
       // Vérifier que tout est bien supprimé
