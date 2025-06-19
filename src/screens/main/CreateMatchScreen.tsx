@@ -185,6 +185,10 @@ const CreateMatchScreen = () => {
       newErrors.field = 'Le terrain est requis';
     }
 
+    if (matchVisibility === 'group' && (!selectedGroupIds || selectedGroupIds.length === 0)) {
+      newErrors.group = 'Veuillez sélectionner au moins un groupe';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -209,6 +213,9 @@ const CreateMatchScreen = () => {
           duration: parseInt(duration),
           groupIds: matchVisibility === 'group' ? selectedGroupIds : undefined,
         }));
+        if(matchVisibility==='group'){
+          dispatch(fetchGroups());
+        }
         navigation.goBack();
       } catch (error: any) {
         console.error('Error creating match:', error);
@@ -317,6 +324,9 @@ const CreateMatchScreen = () => {
                         {group.name}
                       </Chip>
                     ))}
+                    {errors.group && (
+                      <Text style={styles.errorText}>{errors.group}</Text>
+                    )}
                   </View>
                 ) : (
                   <Text style={{ color: '#888', marginBottom: 16 }}>Aucun groupe créé.</Text>

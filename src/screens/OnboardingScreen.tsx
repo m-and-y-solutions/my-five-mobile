@@ -62,6 +62,7 @@ const OnboardingScreen = () => {
     try {
       await AsyncStorage.setItem('onboardingSeen', 'true');
       dispatch(setOnboardingSeen(true));
+      console.log('------------', AsyncStorage.getItem('onboardingSeen'), )
     } catch (error) {
       console.error('Error saving onboarding state:', error);
     }
