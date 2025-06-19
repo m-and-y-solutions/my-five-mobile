@@ -188,11 +188,11 @@ const authSlice = createSlice({
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
-        console.log('🔒 Auth Store - Before logout:', {
-          accessToken: state.accessToken ? 'Present' : 'Missing',
-          refreshToken: state.refreshToken ? 'Present' : 'Missing',
-          user: state.user ? 'Present' : 'Missing'
-        });
+        // console.log('🔒 Auth Store - Before logout:', {
+        //   accessToken: state.accessToken ? 'Present' : 'Missing',
+        //   refreshToken: state.refreshToken ? 'Present' : 'Missing',
+        //   user: state.user ? 'Present' : 'Missing'
+        // });
         
         state.accessToken = null;
         state.refreshToken = null;
@@ -200,11 +200,11 @@ const authSlice = createSlice({
         state.error = null;
         // state.hasSeenOnboarding = false; // Remettre à false lors du logout
         
-        console.log('🧹 Auth Store - After logout:', {
-          accessToken: state.accessToken ? 'Present' : 'Missing',
-          refreshToken: state.refreshToken ? 'Present' : 'Missing',
-          user: state.user ? 'Present' : 'Missing'
-        });
+        // console.log('🧹 Auth Store - After logout:', {
+        //   accessToken: state.accessToken ? 'Present' : 'Missing',
+        //   refreshToken: state.refreshToken ? 'Present' : 'Missing',
+        //   user: state.user ? 'Present' : 'Missing'
+        // });
       });
   },
 });

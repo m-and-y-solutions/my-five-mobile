@@ -6,12 +6,11 @@ import api from './api';
 const authService = {
   async login(credentials: LoginCredentials) {
     try {
-      console.log('🔑 Starting login process...');
+      // console.log('🔑 Starting login process...');
       const response = await api.post(`${config.apiUrl}/auth/login`, credentials);
-      console.log('✅ Login response received:', response.data);
       //todo remove
-            await AsyncStorage.multiRemove(['onboardingSeen']);
-            await AsyncStorage.setItem('onboardingSeen', 'false');
+            // await AsyncStorage.multiRemove(['onboardingSeen']);
+            // await AsyncStorage.setItem('onboardingSeen', 'false');
 
       
       if (!response.data?.data?.accessToken || !response.data?.data?.refreshToken) {
@@ -25,10 +24,10 @@ const authService = {
       // Vérifier que les tokens sont bien stockés
       const storedAccessToken = await AsyncStorage.getItem('accessToken');
       const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
-      console.log('💾 Stored tokens after login:', {
-        accessToken: storedAccessToken ? 'Stored' : 'Missing',
-        refreshToken: storedRefreshToken ? 'Stored' : 'Missing'
-      });
+      // console.log('💾 Stored tokens after login:', {
+      //   accessToken: storedAccessToken ? 'Stored' : 'Missing',
+      //   refreshToken: storedRefreshToken ? 'Stored' : 'Missing'
+      // });
 
       return {
         success: true,
@@ -156,18 +155,18 @@ const authService = {
       });
       console.log('✅ Backend logout successful');
 
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user', 'token','onboardingSeen']);
-      console.log('🧹 Local storage cleared');
+      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user', 'token']);
+      // console.log('🧹 Local storage cleared');
       
       // Vérifier que tout est bien supprimé
       const remainingToken = await AsyncStorage.getItem('accessToken');
       const remainingRefreshToken = await AsyncStorage.getItem('refreshToken');
       const remainingUser = await AsyncStorage.getItem('user');
-      console.log('🔍 Storage check after logout:', {
-        accessToken: remainingToken ? 'Still present' : 'Cleared',
-        refreshToken: remainingRefreshToken ? 'Still present' : 'Cleared',
-        user: remainingUser ? 'Still present' : 'Cleared'
-      });
+      // console.log('🔍 Storage check after logout:', {
+      //   accessToken: remainingToken ? 'Still present' : 'Cleared',
+      //   refreshToken: remainingRefreshToken ? 'Still present' : 'Cleared',
+      //   user: remainingUser ? 'Still present' : 'Cleared'
+      // });
 
       return { success: true };
     } catch (error) {

@@ -167,10 +167,10 @@ const Navigation = () => {
   React.useEffect(() => {
     const init = async () => {
       try {
-        console.log('🔄 Navigation - Starting auth restoration...');
+        // console.log('🔄 Navigation - Starting auth restoration...');
         await dispatch(restoreAuth());
         const onboardingSeen = await AsyncStorage.getItem("onboardingSeen");
-        console.log('📱 Navigation - Onboarding seen:', onboardingSeen);
+        // console.log('📱 Navigation - Onboarding seen:', onboardingSeen);
         if (onboardingSeen === "true") {
           dispatch(setOnboardingSeen(true));
         }
@@ -184,11 +184,11 @@ const Navigation = () => {
     init();
   }, [dispatch]);
 
-  console.log('🔑 Navigation State:', {
-    accessToken: accessToken ? "Present" : "Missing",
-    hasSeenOnboarding,
-    isLoading
-  });
+  // console.log('🔑 Navigation State:', {
+  //   accessToken: accessToken ? "Present" : "Missing",
+  //   hasSeenOnboarding,
+  //   isLoading
+  // });
 
   if (isLoading) {
     console.log('⏳ Navigation - Still loading...');

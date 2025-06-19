@@ -427,7 +427,7 @@ const MatchDetailsScreen = () => {
                     : "#FFA000",
               }}
             >
-              {selectedMatch?.visibility === "public" ? "Publique" : "Privé"}
+              {selectedMatch?.visibility === "public" ? "Publique" : selectedMatch?.visibility === "private" ? "Privé":  "Groupe"}
             </Chip>
             <IconButton
               icon="share-variant"
