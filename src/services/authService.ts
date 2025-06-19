@@ -179,7 +179,13 @@ const authService = {
 
   async clearTokens() {
     await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
-  }
+  },
+
+  sendVerificationCode: (email: string) =>
+    api.post('/auth/send-code', { email }),
+
+  verifyCode: (email: string, code: string) =>
+    api.post('/auth/verify-code', { email, code })
 };
 
 export default authService; 

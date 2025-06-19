@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootStackParamList } from '../../types/navigation.types';
 import ImagePicker from '../../components/ImagePicker';
-import { register } from '../../store/slices/authSlice';
+import { register, sendCode } from '../../store/slices/authSlice';
 import { AppDispatch, RootState } from '../../store';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
@@ -64,8 +64,8 @@ const RegisterScreen = () => {
       return;
     }
 
-    if (!firstName || !lastName || !email || !password || !confirmPassword ) {
-      setError('Veuillez remplir tous les champs obligatoires');
+    if (!firstName || !lastName || !email || !password || !confirmPassword || !telephone) {
+      setError('Veuillez remplir tous les champs obligatoires, y compris le téléphone');
       return;
     }
 
@@ -88,7 +88,9 @@ const RegisterScreen = () => {
       })).unwrap();
 
       if (result.success) {
-        navigation.navigate('Login');
+        // Send verification code
+        const sendCodeResult = await dispatch(sendCode(email)).unwrap();
+        navigation.navigate('VerifyCode', { email: email });
       } else {
         setError(result.message || 'Une erreur est survenue');
       }
@@ -127,7 +129,7 @@ const RegisterScreen = () => {
             </Text>
 
             <ImagePicker onImageSelected={handleImageSelected} />
-         {/* Inputs avec nouveau style */}
+            {/* Inputs avec nouveau style */}
             <TextInput
               label="Prénom"
               value={firstName}
@@ -397,7 +399,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
   },
-   buttonLabel: {
+  buttonLabel: {
     fontWeight: 'bold',
     fontSize: 16,
   },
