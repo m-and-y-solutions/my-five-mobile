@@ -6,7 +6,7 @@ export interface Match {
   fieldId: string;
   maxPlayers: number;
   type: 'friendly' | 'competitive';
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'private'| 'group';
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   price?: number;
   currency?: string;
@@ -39,9 +39,10 @@ export interface CreateMatchData {
   date: Date;
   location: string;
   type: string;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'private'| 'group';
   maxPlayers?: number;
   duration?: number;
+  groupIds?: string[];
 }
 
 export interface UpdateMatchData {
@@ -51,7 +52,7 @@ export interface UpdateMatchData {
   location?: string;
   status?: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   type?: string;
-  visibility?: 'public' | 'private';
+  visibility?: 'public' | 'private' | 'group';
   maxPlayers?: number;
 }
 

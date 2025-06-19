@@ -10,6 +10,8 @@ import { logout } from '../../store/slices/authSlice';
 import { fetchUserStats, fetchUserSocial, fetchUserById } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store';
 import config from '../../config/config';
+import { fetchGroups } from '../../store/slices/groupsSlice';
+import GroupsScreen from './GroupsScreen';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList, 'ProfileMain'>;
 type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
@@ -18,6 +20,7 @@ const ProfileScreen = () => {
   const route = useRoute<ProfileScreenRouteProp>();
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
   const { stats, social, loading, error, selectedUser } = useSelector((state: RootState) => state.user);
+  const { groups } = useSelector((state: RootState) => state.groups);
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const theme = useTheme();
@@ -70,6 +73,10 @@ const ProfileScreen = () => {
   const handleLogout = () => {
     dispatch(logout());
   };
+
+  useEffect(() => {
+    dispatch(fetchGroups());
+  }, [dispatch]);
 
   if (!user) {
     return (
@@ -219,14 +226,16 @@ const ProfileScreen = () => {
               onPress={() => navigation.navigate('UserStats')}
             />
             <List.Item
-              title="Groupes"
+              title="Mes Groupes"
               titleStyle={{ color: theme.colors.onSurface }}
               description="Gérer vos groupes"
               descriptionStyle={{ color: theme.colors.onSurface }}
               left={props => <List.Icon {...props} icon="account-group" color={theme.colors.primary} />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
+              onPress={() => navigation.navigate('Groups', { isUserGroups: true })}
             />
           </View>
+
 
           <View style={styles(theme).section}>
             <Button

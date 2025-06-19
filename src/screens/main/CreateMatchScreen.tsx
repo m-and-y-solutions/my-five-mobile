@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { Text, TextInput, Button, IconButton, List } from 'react-native-paper';
+import { Text, TextInput, Button, IconButton, List, Chip } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,6 +14,7 @@ import { Field } from '../../store/slices/fieldSlice';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { fetchGroups } from '../../store/slices/groupsSlice';
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -25,13 +26,17 @@ const CreateMatchScreen = () => {
   const navigation = useNavigation<CreateMatchScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const { fields, loading: fieldsLoading, error: fieldsError } = useSelector((state: RootState) => state.field);
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const myGroups = useSelector((state: RootState) =>
+    state.groups.groups.filter((g) => g.creatorId === userId)
+  );
   
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('10');
   const [team1Name, setTeam1Name] = useState('');
   const [team2Name, setTeam2Name] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const [matchVisibility, setMatchVisibility] = useState<'public' | 'private' | 'group'>('public');
   const [selectedCity, setSelectedCity] = useState<{id: string, name: string} | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [cityModalVisible, setCityModalVisible] = useState(false);
@@ -44,6 +49,7 @@ const CreateMatchScreen = () => {
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [isFieldSelectionEnabled, setIsFieldSelectionEnabled] = useState(false);
   const [title, setTitle] = useState('');
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
   const isFieldAvailable = (field: Field) => {
     if (!field.isAvailable) return false;
@@ -195,12 +201,13 @@ const CreateMatchScreen = () => {
           date: selectedDate,
           maxPlayers: parseInt(maxPlayers),
           type: 'friendly',
-          visibility: isPublic ? 'public' : 'private',
+          visibility: matchVisibility ,
           fieldId: selectedField!,
           location: selectedFieldData?.address || '',
           team1Name: team1Name || undefined,
           team2Name: team2Name || undefined,
-          duration: parseInt(duration)
+          duration: parseInt(duration),
+          groupIds: matchVisibility === 'group' ? selectedGroupIds : undefined,
         }));
         navigation.goBack();
       } catch (error: any) {
@@ -239,6 +246,13 @@ const CreateMatchScreen = () => {
     }
   };
 
+  useEffect(() => {
+    if (matchVisibility === 'group' && (!myGroups || myGroups.length === 0)) {
+      dispatch(fetchGroups());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchVisibility]);
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -258,23 +272,56 @@ const CreateMatchScreen = () => {
                 <Text style={styles.toggleLabel}>Visibilité du match</Text>
                 <View style={styles.toggleButtons}>
                   <TouchableOpacity
-                    style={[styles.toggleButton, isPublic && styles.toggleButtonActive]}
-                    onPress={() => setIsPublic(true)}
+                    style={[styles.toggleButton, matchVisibility === 'public' && styles.toggleButtonActive]}
+                    onPress={() => setMatchVisibility('public')}
                   >
-                    <Text style={[styles.toggleButtonText, isPublic && styles.toggleButtonTextActive]}>
+                    <Text style={[styles.toggleButtonText, matchVisibility === 'public' && styles.toggleButtonTextActive]}>
                       Public
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.toggleButton, !isPublic && styles.toggleButtonActive]}
-                    onPress={() => setIsPublic(false)}
+                    style={[styles.toggleButton, matchVisibility === 'private' && styles.toggleButtonActive]}
+                    onPress={() => setMatchVisibility('private')}
                   >
-                    <Text style={[styles.toggleButtonText, !isPublic && styles.toggleButtonTextActive]}>
+                    <Text style={[styles.toggleButtonText, matchVisibility === 'private' && styles.toggleButtonTextActive]}>
                       Privé
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.toggleButton, matchVisibility === 'group' && styles.toggleButtonActive]}
+                    onPress={() => setMatchVisibility('group')}
+                  >
+                    <Text style={[styles.toggleButtonText, matchVisibility === 'group' && styles.toggleButtonTextActive]}>
+                      Groupes
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {matchVisibility === 'group' && (
+                myGroups.length > 0 ? (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
+                    {myGroups.map(group => (
+                      <Chip
+                        key={group.id}
+                        selected={selectedGroupIds.includes(group.id)}
+                        onPress={() => {
+                          setSelectedGroupIds(prev =>
+                            prev.includes(group.id)
+                              ? prev.filter(id => id !== group.id)
+                              : [...prev, group.id]
+                          );
+                        }}
+                        style={{ margin: 4 }}
+                      >
+                        {group.name}
+                      </Chip>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={{ color: '#888', marginBottom: 16 }}>Aucun groupe créé.</Text>
+                )
+              )}
 
               <View style={styles.inputContainer}>
                 <TextInput
