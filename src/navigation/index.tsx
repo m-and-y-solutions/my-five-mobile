@@ -27,6 +27,8 @@ import SettingsScreen from "../screens/main/SettingsScreen";
 import CreateMatchScreen from "../screens/main/CreateMatchScreen";
 import MatchDetailsScreen from "../screens/main/MatchDetailsScreen";
 import UserStatsScreen from "../screens/main/UserStatsScreen";
+import GroupsScreen from '../screens/main/GroupsScreen';
+import GroupDetailsScreen from '../screens/main/GroupDetailsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -48,6 +50,20 @@ const ProfileNavigator = () => {
         options={({ navigation }) => ({
           headerShown: true,
           title: "Mes matchs",
+          headerLeft: () => (
+            <IconButton
+              icon="arrow-left"
+              onPress={() => navigation.navigate("ProfileMain")}
+            />
+          ),
+        })}
+      />
+        <ProfileStack.Screen
+        name="Groups"
+        component={GroupsScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          title: "Mes groupes",
           headerLeft: () => (
             <IconButton
               icon="arrow-left"
@@ -113,6 +129,16 @@ const MainTabs = () => {
           title: "Matchs",
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <IconButton icon="soccer" size={size} iconColor={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Groups"
+        component={GroupsScreen}
+        options={{
+          title: "Groupes",
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <IconButton icon="account-group" size={size} iconColor={color} />
           ),
         }}
       />
@@ -227,6 +253,34 @@ const Navigation = () => {
                 options={{
                   headerShown: true,
                   title: "Profil",
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                }}
+              />
+              <Stack.Screen
+                name="CreateGroup"
+                component={require('../screens/main/CreateGroupScreen').default}
+                options={{
+                  headerShown: true,
+                  title: "Créer un groupe",
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                }}
+              />
+              <Stack.Screen
+                name="GroupDetails"
+                component={GroupDetailsScreen}
+                options={{
+                  headerShown: true,
+                  title: "Détails du groupe",
                   headerLeft: () => (
                     <IconButton
                       icon="arrow-left"

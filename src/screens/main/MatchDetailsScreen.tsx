@@ -25,7 +25,6 @@ import {
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import { RootStackParamList } from "../../navigation/types";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../store";
 import {
@@ -42,6 +41,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Portal } from "react-native-paper";
+import { RootStackParamList } from "types/navigation.types";
 
 const { width } = Dimensions.get("window");
 

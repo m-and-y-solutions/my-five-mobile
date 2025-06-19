@@ -17,6 +17,7 @@ export interface Match {
   team1Score?: number;
   team2Score?: number;
   duration?: number;
+  creatorId?: string;
   creator: {
     id: string;
     firstName: string;
@@ -206,6 +207,11 @@ const matchService = {
       `${config.apiUrl}/matches/${id}/score`,
       data
     );
+    return response.data;
+  },
+
+  async deleteMatch(id: string) {
+    const response = await api.delete(`${config.apiUrl}/matches/${id}`);
     return response.data;
   },
 };

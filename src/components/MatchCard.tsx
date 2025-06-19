@@ -3,12 +3,12 @@ import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Card, Text, Avatar, Button, useTheme, Badge } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
 import { Match } from '../services/matchService';
 import { useDispatch, useSelector } from 'react-redux';
 import { joinMatch } from '../store/slices/matchSlice';
 import { AppDispatch, RootState } from '../store';
 import config from 'config/config';
+import { RootStackParamList } from 'types/navigation.types';
 
 type MatchCardProps = {
   match: Match;

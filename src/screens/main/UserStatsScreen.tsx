@@ -344,7 +344,7 @@ const UserStatsScreen = () => {
       </Surface>
 
       {/* Streaks & Position */}
-      <Surface style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      {/* <Surface style={[styles.card, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.cardHeader}>
           <MaterialCommunityIcons name="run-fast" size={24} color="#4CAF50" />
           <Text variant="titleLarge" style={[styles.cardTitle, { color: "#000000" }]}>
@@ -391,7 +391,7 @@ const UserStatsScreen = () => {
             </Chip>
           </View>
         )}
-      </Surface>
+      </Surface> */}
 
       {/* Achievements */}
       <Surface style={[styles.card, { backgroundColor: theme.colors.surface }]}>

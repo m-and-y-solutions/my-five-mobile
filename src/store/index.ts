@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import matchReducer from './slices/matchSlice';
 import fieldReducer from './slices/fieldSlice';
 import userReducer from './slices/userSlice';
+import groupsReducer from './slices/groupsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     match: matchReducer,
     field: fieldReducer,
     user: userReducer,
+    groups: groupsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
