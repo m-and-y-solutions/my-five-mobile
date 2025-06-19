@@ -56,14 +56,23 @@ export const createMatch = createAsyncThunk(
     date: Date;
     maxPlayers: number;
     type: 'friendly' | 'competitive';
-    visibility: 'public' | 'private';
+    visibility: 'public' | 'private' | 'group';
     fieldId: string;
     location: string;
     team1Name?: string;
     team2Name?: string;
     duration: number;
+    groupIds?: string[];
   }) => {
     return await matchService.createMatch(matchData);
+  }
+);
+
+export const deleteMatch = createAsyncThunk(
+  'match/deleteMatch',
+  async (matchId: string) => {
+    await matchService.deleteMatch(matchId);
+    return matchId;
   }
 );
 
@@ -290,6 +299,14 @@ const matchSlice = createSlice({
       .addCase(updateMatchStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to update match status';
+      })
+      .addCase(deleteMatch.fulfilled, (state, action) => {
+        state.matches = state.matches.filter(match => match.id !== action.payload);
+        state.allMatches = state.allMatches.filter(match => match.id !== action.payload);
+        state.userMatches = state.userMatches.filter(match => match.id !== action.payload);
+        if (state.selectedMatch && state.selectedMatch.id === action.payload) {
+          state.selectedMatch = null;
+        }
       })
   },
 });
