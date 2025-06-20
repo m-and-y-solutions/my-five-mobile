@@ -141,7 +141,6 @@ const CreateMatchScreen = () => {
   const handleDateChange = (selectedDate: Date) => {
     const timeZone = 'Europe/Brussels';
     const zonedDate = toZonedTime(selectedDate, timeZone);
-    console.log('----------', { selectedDate, zonedDate });
     
     if (!validateTime(zonedDate)) {
       // Si la validation échoue, on ne change pas la date

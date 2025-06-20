@@ -40,10 +40,8 @@ const ProfileScreen = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-       console.log('--------',route.params, userId, currentUser?.id)
 
       if (userId) {
-        console.log('Screen focused, fetching data for user:', userId);
         fetchUserData();
       }
     }, [userId])
@@ -192,15 +190,16 @@ const ProfileScreen = () => {
               descriptionStyle={{ color: theme.colors.onSurface }}
               left={props => <List.Icon {...props} icon="account-edit" color={theme.colors.primary} />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
+              onPress={() => navigation.navigate('EditProfile')}
             />
-            <List.Item
+            {/* <List.Item
               title="Préférences"
               titleStyle={{ color: theme.colors.onSurface }}
               description="Définir vos préférences de match"
               descriptionStyle={{ color: theme.colors.onSurface }}
               left={props => <List.Icon {...props} icon="cog" color={theme.colors.primary} />}
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
-            />
+            /> */}
           </View>
 
           <View style={styles(theme).section}>

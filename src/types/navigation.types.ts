@@ -31,5 +31,6 @@ export type ProfileStackParamList = {
   Matches: { isUserMatches?: boolean };
   Groups: { isUserGroups?: boolean };
   UserStats: undefined;
+  EditProfile: undefined;
 }; 
  

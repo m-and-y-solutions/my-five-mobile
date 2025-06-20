@@ -3,6 +3,8 @@ import authService from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
 import { LoginCredentials, RegisterData } from '../../types/auth.types';
+import api from 'services/api';
+import config from 'config/config';
 
 export const restoreAuth = createAsyncThunk(
   'auth/restore',
@@ -22,6 +24,23 @@ export const restoreAuth = createAsyncThunk(
     } catch (error) {
       console.error('Error restoring auth state:', error);
       return null;
+    }
+  }
+);
+export const getMe = createAsyncThunk(
+  'auth/getMe',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await authService.getCurrentUser();
+      if (response.success && response.data) {
+        await AsyncStorage.setItem('user', JSON.stringify(response.data));
+        // console.log('-----------------',response.data)
+        return response.data;
+      } else {
+        return rejectWithValue(response.message || 'Erreur lors de la récupération du profil');
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur lors de la récupération du profil');
     }
   }
 );
@@ -73,6 +92,38 @@ export const logout = createAsyncThunk(
   async () => {
     const response = await authService.logout();
     return response;
+  }
+);
+
+export const updateProfil = createAsyncThunk(
+  'auth/updateProfil',
+  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'profileImage' && value && typeof value !== 'string') {
+            formData.append('profileImage', value as any);
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+      const response = await api.put(
+        `${config.apiUrl}/users/${id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur lors de la mise à jour du profil');
+    }
   }
 );
 
@@ -186,6 +237,19 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.user = null;
       })
+      // GetMe
+      .addCase(getMe.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getMe.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(getMe.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la récupération du profil';
+      })
       // Logout
       .addCase(logout.fulfilled, (state) => {
         // console.log('🔒 Auth Store - Before logout:', {
@@ -205,7 +269,22 @@ const authSlice = createSlice({
         //   refreshToken: state.refreshToken ? 'Present' : 'Missing',
         //   user: state.user ? 'Present' : 'Missing'
         // });
-      });
+      })    // Update Profil
+      .addCase(updateProfil.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfil.fulfilled, (state, action) => {
+        state.loading = false;
+        // Met à jour selectedUser si c'est le user affiché
+          state.user = action.payload;
+        
+      })
+      .addCase(updateProfil.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la mise à jour du profil';
+      })
+      ;
   },
 });
 

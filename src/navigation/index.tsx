@@ -29,6 +29,7 @@ import MatchDetailsScreen from "../screens/main/MatchDetailsScreen";
 import UserStatsScreen from "../screens/main/UserStatsScreen";
 import GroupsScreen from '../screens/main/GroupsScreen';
 import GroupDetailsScreen from '../screens/main/GroupDetailsScreen';
+import EditProfileScreen from '../screens/main/EditProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -58,7 +59,7 @@ const ProfileNavigator = () => {
           ),
         })}
       />
-        <ProfileStack.Screen
+      <ProfileStack.Screen
         name="Groups"
         component={GroupsScreen}
         options={({ navigation }) => ({
@@ -86,6 +87,20 @@ const ProfileNavigator = () => {
           ),
         })}
       />
+      <ProfileStack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          title: "Modifier le profil",
+          headerLeft: () => (
+            <IconButton
+              icon="arrow-left"
+              onPress={() => navigation.goBack()}
+            />
+          ),
+        })}
+      />
     </ProfileStack.Navigator>
   );
 };
@@ -96,12 +111,13 @@ const MainTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerRight: () => (
-          <IconButton
-            icon="menu"
-            onPress={() => navigation.navigate("Settings")}
-          />
-        ),
+        // todo restore after implementing settings
+        // headerRight: () => (
+        //   <IconButton
+        //     icon="menu"
+        //     onPress={() => navigation.navigate("Settings")}
+        //   />
+        // ),
         tabBarActiveTintColor: "#4CAF50",
         tabBarInactiveTintColor: "#666",
         tabBarStyle: {
@@ -191,7 +207,6 @@ const Navigation = () => {
   // });
 
   if (isLoading) {
-    console.log('⏳ Navigation - Still loading...');
     return null;
   }
 

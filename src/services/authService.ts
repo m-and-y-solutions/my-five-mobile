@@ -144,16 +144,16 @@ const authService = {
 
   async logout() {
     try {
-      console.log('🔒 Starting logout process...');
+      // console.log('🔒 Starting logout process...');
       const token = await AsyncStorage.getItem('accessToken');
-      console.log('🔑 Current access token:', token);
+      // console.log('🔑 Current access token:', token);
       
       await api.post(`${config.apiUrl}/auth/logout`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-      console.log('✅ Backend logout successful');
+      // console.log('✅ Backend logout successful');
 
       await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user', 'token']);
       // console.log('🧹 Local storage cleared');

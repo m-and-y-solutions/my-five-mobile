@@ -15,12 +15,12 @@ import {
 } from "react-native-paper";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../navigation/types";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../../store";
 import { fetchAllMatches, resetMatches } from "../../store/slices/matchSlice";
 import MatchCard from "../../components/MatchCard";
 import { LightTheme as theme } from "../../theme";
+import { RootStackParamList } from "types/navigation.types";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,

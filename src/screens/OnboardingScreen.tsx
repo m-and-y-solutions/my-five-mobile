@@ -14,19 +14,19 @@ const slides = [
     id: 1,
     title: 'Matchs',
     description: 'Créez vos propres matchs ou rejoignez ceux des autres joueurs. Organisez des rencontres sportives et partagez votre passion !',
-    image: require('../../assets/my-five-icon.png'),
+    image: require('../../assets/my-five-icon-green.png'),
   },
   {
     id: 2,
     title: 'Communauté',
     description: 'Rejoignez des groupes, suivez d\'autres joueurs et échangez avec eux. Construisez votre réseau sportif !',
-    image: require('../../assets/my-five-splash.png'),
+    image: require('../../assets/my-five-splash-green.png'),
   },
   {
     id: 3,
     title: 'Performance',
     description: 'Suivez votre score, votre classement et vos activités. Progressez et devenez le meilleur !',
-    image: require('../../assets/my-five-splash.png'),
+    image: require('../../assets/my-five-splash-green.png'),
   },
 ];
 
@@ -62,7 +62,6 @@ const OnboardingScreen = () => {
     try {
       await AsyncStorage.setItem('onboardingSeen', 'true');
       dispatch(setOnboardingSeen(true));
-      console.log('------------', AsyncStorage.getItem('onboardingSeen'), )
     } catch (error) {
       console.error('Error saving onboarding state:', error);
     }
