@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import { Text, TextInput, Button, ActivityIndicator, Chip, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
@@ -57,6 +57,11 @@ const CreateGroupScreen = () => {
 
   return (
     <View style={styles.container}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
       <Text style={styles.title}>Créer un groupe</Text>
       <TextInput
         label="Nom du groupe"
@@ -120,6 +125,8 @@ const CreateGroupScreen = () => {
         Créer
       </Button>
       {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
+    
+  </ScrollView>
     </View>
   );
 };
@@ -179,6 +186,13 @@ const styles = StyleSheet.create({
     color: '#e53935',
     marginBottom: 8,
     textAlign: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
   },
 });
 

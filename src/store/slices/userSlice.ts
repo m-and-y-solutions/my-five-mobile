@@ -52,6 +52,40 @@ export const fetchUserById = createAsyncThunk(
   }
 );
 
+export const updateUser = createAsyncThunk(
+  'user/updateUser',
+  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'profileImage' && value && typeof value !== 'string') {
+            formData.append('profileImage', value as any);
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+      const response = await api.put(
+        `${config.apiUrl}/users/${id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur lors de la mise à jour du profil');
+    }
+  }
+);
+
+
+
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -102,7 +136,23 @@ const userSlice = createSlice({
       .addCase(fetchUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Une erreur est survenue';
-      });
+      })
+      // Update User
+      .addCase(updateUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.loading = false;
+        // Met à jour selectedUser si c'est le user affiché
+        if (state.selectedUser && state.selectedUser.id === action.payload.id) {
+          state.selectedUser = { ...state.selectedUser, ...action.payload };
+        }
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la mise à jour du profil';
+      })
   },
 });
 

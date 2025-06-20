@@ -51,12 +51,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
 export default function App() {
   React.useEffect(() => {
-    console.log('🚀 App.tsx - App initialized');
     const testAsyncStorage = async () => {
       try {
         await AsyncStorage.setItem('test', 'test');
         const value = await AsyncStorage.getItem('test');
-        console.log('📦 AsyncStorage test:', value);
       } catch (error) {
         console.error('❌ AsyncStorage error:', error);
       }

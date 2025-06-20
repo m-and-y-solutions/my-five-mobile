@@ -3,9 +3,11 @@ import { View, StyleSheet, Image, Alert, TouchableOpacity } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
+import config from 'config/config';
 
 interface ImagePickerProps {
   onImageSelected: (imageData: FormData) => void;
+  initialImage?: string;
 }
 
 interface ImageFile {
@@ -14,8 +16,8 @@ interface ImageFile {
   name: string;
 }
 
-const ImagePickerComponent: React.FC<ImagePickerProps> = ({ onImageSelected }) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+const ImagePickerComponent: React.FC<ImagePickerProps> = ({ onImageSelected, initialImage }) => {
+  const [selectedImage, setSelectedImage] = useState<string | null>( null);
 
   useEffect(() => {
     (async () => {
@@ -28,6 +30,7 @@ const ImagePickerComponent: React.FC<ImagePickerProps> = ({ onImageSelected }) =
       }
     })();
   }, []);
+
 
   const handleImagePick = async () => {
     try {
@@ -78,6 +81,12 @@ const ImagePickerComponent: React.FC<ImagePickerProps> = ({ onImageSelected }) =
           <Image
             source={{ uri: selectedImage }}
             style={styles.image}
+          />
+        ) :
+        initialImage ? (
+          <Image
+          source={{ uri: `${config.serverUrl}${initialImage}` }}
+          style={styles.image}
           />
         ) : (
           <View style={styles.defaultImageContainer}>
