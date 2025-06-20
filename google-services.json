@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "484511467323",
+    "project_id": "my-solution-a80e7",
+    "storage_bucket": "my-solution-a80e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:484511467323:android:41868153377129e6ec591e",
+        "android_client_info": {
+          "package_name": "com.mysolution.myfive"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCATN8F-nOpURi8mrH4AtiDmC6ItheZg8c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

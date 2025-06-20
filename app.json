@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "MyFiveMobile",
-    "slug": "my-five-mobile",
-    "version": "1.0.0",
+    "name": "my-five",
+    "slug": "reservmatch-mobile",
+    "version": "1.1.0",
     "icon": "./assets/my-five-icon-green.png",
     "splash": {
       "image": "./assets/my-five-splash-green.png",
@@ -10,7 +10,8 @@
       "backgroundColor": "#ffffff"
     },
     "android": {
-      "package": "com.myfive.app",
+      "package": "com.mysolution.myfive",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/my-five-icon-green.png",
@@ -21,7 +22,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "b1e38294-56ee-4bce-819b-14d419b951c4"
+        "projectId": "be32c2b9-9554-4ceb-a2e0-6e15ca5e9e33"
       }
     },
     "updates": {
@@ -30,6 +31,6 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "owner": "houda04"
+    "owner": "my-five"
   }
 }
