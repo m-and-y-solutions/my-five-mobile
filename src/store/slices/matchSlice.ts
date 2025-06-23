@@ -2,12 +2,15 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { Match } from '../../services/matchService';
 import matchService from '../../services/matchService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSelector } from 'react-redux';
 
 
 export const fetchAllMatches = createAsyncThunk(
   'match/fetchAllMatches',
-  async (status: string) => {
-    return await matchService.getMatches({ status, visibility: 'public' });
+  async ({ status }: { status?: string } = {}, { getState }) => {
+    const state = getState() as any;
+    const country = state.auth.user?.country;
+    return await matchService.getMatches({ status, visibility: 'public', country });
   }
 );
 
@@ -54,6 +57,7 @@ export const createMatch = createAsyncThunk(
   async (matchData: {
     title: string;
     date: Date;
+    time?: string;
     maxPlayers: number;
     type: 'friendly' | 'competitive';
     visibility: 'public' | 'private' | 'group';
@@ -63,6 +67,10 @@ export const createMatch = createAsyncThunk(
     team2Name?: string;
     duration: number;
     groupIds?: string[];
+    price?: number;
+    currency?: string;
+    country?: string;
+    city?: string;
   }) => {
     return await matchService.createMatch(matchData);
   }

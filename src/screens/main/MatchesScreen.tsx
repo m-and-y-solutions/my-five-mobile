@@ -29,19 +29,26 @@ const MatchesScreen = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchMatches();
+      setActiveTab('upcoming');
       return () => {
         dispatch(resetMatches());
       };
-    }, [activeTab])
+    }, [dispatch])
   );
+
+  useEffect(() => {
+    if (!matches || matches.length === 0) {
+      fetchMatches();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchMatches = async () => {
     try {
       if (route.params?.isUserMatches) {
         await dispatch(fetchUserMatches(activeTab));
       } else {
-        await dispatch(fetchAllMatches(activeTab));
+        await dispatch(fetchAllMatches({ status: activeTab }));
       }
     } catch (err: any) {
       console.error('Error in fetchMatches:', err);

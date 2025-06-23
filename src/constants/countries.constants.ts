@@ -24,3 +24,20 @@ export const CITIES: City[] = [
     { id: '18', name: 'Woluwe-Saint-Lambert' },
     { id: '19', name: 'Woluwe-Saint-Pierre' },
   ];
+
+  export const COUNTRIES = [
+    { label: '🇧🇪 Belgique', value: 'Belgique' },
+    { label: '🇹🇳 Tunisie', value: 'Tunisie' },
+  ];
+  
+  export const COMMUNES_BY_COUNTRY: Record<string, string[]> = {
+    Belgique: [
+      'Anderlecht', 'Auderghem', 'Berchem-Sainte-Agathe', 'Bruxelles', 'Etterbeek',
+      'Evere', 'Forest', 'Ganshoren', 'Ixelles', 'Jette', 'Koekelberg', 'Molenbeek-Saint-Jean',
+      'Saint-Gilles', 'Saint-Josse-ten-Noode', 'Schaerbeek', 'Uccle', 'Watermael-Boitsfort',
+      'Woluwe-Saint-Lambert', 'Woluwe-Saint-Pierre'
+    ],
+    Tunisie: [
+      'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 'Gafsa', 'Monastir', 'Ben Arous'
+    ]
+  };
