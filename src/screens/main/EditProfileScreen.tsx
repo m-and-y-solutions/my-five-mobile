@@ -24,6 +24,8 @@ const EditProfileScreen = () => {
   const [profileImage, setProfileImage] = useState<File | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const handleImageSelected = (data: FormData) => {
     const image = data.getAll('image')[0] as unknown as File;
@@ -35,6 +37,10 @@ const EditProfileScreen = () => {
       Alert.alert('Champs requis', 'Tous les champs sont obligatoires.');
       return;
     }
+    if ((newPassword || confirmNewPassword) && newPassword !== confirmNewPassword) {
+      Alert.alert('Erreur', 'Les nouveaux mots de passe ne correspondent pas.');
+      return;
+    }
     setSubmitting(true);
     const data: any = {
       firstName,
@@ -44,6 +50,7 @@ const EditProfileScreen = () => {
       address,
     };
     if (profileImage) data.profileImage = profileImage;
+    if (newPassword) data.newPassword = newPassword;
     try {
       await dispatch(updateProfil({ id: currentUser.id, data })).unwrap();
       Alert.alert('Succès', 'Profil mis à jour !');
@@ -107,6 +114,20 @@ const EditProfileScreen = () => {
         value={address}
         onChangeText={setAddress}
         style={styles(theme).input}
+      />
+      <TextInput
+        label="Nouveau mot de passe (optionnel)"
+        value={newPassword}
+        onChangeText={setNewPassword}
+        style={styles(theme).input}
+        secureTextEntry
+      />
+      <TextInput
+        label="Confirmer le nouveau mot de passe"
+        value={confirmNewPassword}
+        onChangeText={setConfirmNewPassword}
+        style={styles(theme).input}
+        secureTextEntry
       />
       {error && <Text style={styles(theme).errorText}>{error}</Text>}
       <Button
