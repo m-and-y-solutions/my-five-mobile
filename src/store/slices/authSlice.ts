@@ -127,6 +127,62 @@ export const updateProfil = createAsyncThunk(
   }
 );
 
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (email: string, { rejectWithValue }) => {
+    const response = await authService.forgotPassword(email);
+    if (response.success) {
+      return response.message;
+    } else {
+      return rejectWithValue(response.message);
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async ({ email, token, newPassword }: { email: string; token: string; newPassword: string }, { rejectWithValue }) => {
+    const response = await authService.resetPassword({ email, token, newPassword });
+    if (response.success) {
+      return response.message;
+    } else {
+      return rejectWithValue(response.message);
+    }
+  }
+);
+
+export const sendCode = createAsyncThunk('auth/sendCode', async (email: string) => {
+  await authService.sendVerificationCode(email);
+});
+
+export const checkCode = createAsyncThunk('auth/checkCode', async ({ email, code }: { email: string, code: string }) => {
+  await authService.verifyCode(email, code);
+});
+
+export const verifyResetCodeThunk = createAsyncThunk(
+  'auth/verifyResetCode',
+  async ({ email, code }: { email: string; code: string }, { rejectWithValue }) => {
+    const response = await authService.verifyResetCode(email, code);
+    if (response.success) {
+      return response.message;
+    } else {
+      return rejectWithValue(response.message);
+    }
+  }
+);
+
+export const resetPasswordWithCodeThunk = createAsyncThunk(
+  'auth/resetPasswordWithCode',
+  async ({ email, code, newPassword }: { email: string; code: string; newPassword: string }, { rejectWithValue }) => {
+    const response = await authService.resetPasswordWithCode(email, code, newPassword);
+    if (response.success) {
+      return response.message;
+    } else {
+      return rejectWithValue(response.message);
+    }
+  }
+);
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -283,6 +339,54 @@ const authSlice = createSlice({
       .addCase(updateProfil.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string || 'Erreur lors de la mise à jour du profil';
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la demande de réinitialisation';
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la réinitialisation';
+      })
+      .addCase(verifyResetCodeThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyResetCodeThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(verifyResetCodeThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la vérification du code';
+      })
+      .addCase(resetPasswordWithCodeThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPasswordWithCodeThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPasswordWithCodeThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la réinitialisation avec code';
       })
       ;
   },
