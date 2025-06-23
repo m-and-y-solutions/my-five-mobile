@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { forgotPassword } from '../../store/slices/authSlice';
 import { RootState } from '../../store';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types/navigation.types';
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
@@ -15,6 +17,7 @@ const ForgotPasswordScreen = () => {
   const loading = useSelector((state: RootState) => state.auth.loading);
   const error = useSelector((state: RootState) => state.auth.error);
 
+
   const handleForgotPassword = async () => {
     setLocalError('');
     setLocalSuccess('');
@@ -24,7 +27,7 @@ const ForgotPasswordScreen = () => {
     }
     const result = await dispatch<any>(forgotPassword(email));
     if (result.meta.requestStatus === 'fulfilled') {
-      setLocalSuccess('Un email de réinitialisation a été envoyé si ce compte existe.');
+      (navigation as any).navigate('VerifyCodeReset', { email });
     } else {
       setLocalError(result.payload || "Erreur lors de l'envoi du mail");
     }

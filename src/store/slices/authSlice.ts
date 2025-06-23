@@ -159,6 +159,30 @@ export const checkCode = createAsyncThunk('auth/checkCode', async ({ email, code
   await authService.verifyCode(email, code);
 });
 
+export const verifyResetCodeThunk = createAsyncThunk(
+  'auth/verifyResetCode',
+  async ({ email, code }: { email: string; code: string }, { rejectWithValue }) => {
+    const response = await authService.verifyResetCode(email, code);
+    if (response.success) {
+      return response.message;
+    } else {
+      return rejectWithValue(response.message);
+    }
+  }
+);
+
+export const resetPasswordWithCodeThunk = createAsyncThunk(
+  'auth/resetPasswordWithCode',
+  async ({ email, code, newPassword }: { email: string; code: string; newPassword: string }, { rejectWithValue }) => {
+    const response = await authService.resetPasswordWithCode(email, code, newPassword);
+    if (response.success) {
+      return response.message;
+    } else {
+      return rejectWithValue(response.message);
+    }
+  }
+);
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -339,6 +363,30 @@ const authSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string || 'Erreur lors de la réinitialisation';
+      })
+      .addCase(verifyResetCodeThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyResetCodeThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(verifyResetCodeThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la vérification du code';
+      })
+      .addCase(resetPasswordWithCodeThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPasswordWithCodeThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPasswordWithCodeThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Erreur lors de la réinitialisation avec code';
       })
       ;
   },

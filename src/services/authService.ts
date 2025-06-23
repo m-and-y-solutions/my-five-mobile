@@ -214,7 +214,37 @@ const authService = {
     api.post('/auth/send-code', { email }),
 
   verifyCode: (email: string, code: string) =>
-    api.post('/auth/verify-code', { email, code })
+    api.post('/auth/verify-code', { email, code }),
+
+  async verifyResetCode(email: string, code: string) {
+    try {
+      const response = await api.post(`${config.apiUrl}/auth/verify-reset-code`, { email, code });
+      return {
+        success: true,
+        message: response.data?.message || 'Code valide.'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Erreur lors de la vérification du code',
+      };
+    }
+  },
+
+  async resetPasswordWithCode(email: string, code: string, newPassword: string) {
+    try {
+      const response = await api.post(`${config.apiUrl}/auth/reset-password-with-code`, { email, code, newPassword });
+      return {
+        success: true,
+        message: response.data?.message || 'Mot de passe réinitialisé avec succès.'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Erreur lors de la réinitialisation',
+      };
+    }
+  },
 };
 
 export default authService; 

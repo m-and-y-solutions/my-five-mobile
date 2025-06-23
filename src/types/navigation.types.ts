@@ -18,6 +18,8 @@ export type RootStackParamList = {
   Matches: { isUserMatches?: boolean };
   GroupDetails: { groupId: string };
   VerifyCode: { email: string };
+  VerifyCodeReset: { email: string };
+  ResetPassword: { email: string; code: string };
 };
 
 export type MainTabParamList = {

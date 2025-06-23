@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, TextInput, Button } from 'react-native-paper';
-import { checkCode } from '../../store/slices/authSlice';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation.types';
 import { AppDispatch } from 'store';
@@ -10,20 +9,21 @@ import { verifyResetCodeThunk } from '../../store/slices/authSlice';
 
 // Adjust the navigation types as needed
 
-type Props = NativeStackScreenProps<RootStackParamList, 'VerifyCode'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'VerifyCodeReset'>;
 
-const VerifyCodeScreen: React.FC<Props> = ({ route, navigation }) => {
+const VerifyCodeResetScreen: React.FC<Props> = ({ route, navigation }) => {
   const { email } = route.params;
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const dispatch = useDispatch<AppDispatch>();
+
   const handleVerify = async () => {
     setLoading(true);
     setError('');
     try {
-      await dispatch(checkCode({ email, code })).unwrap();
-      navigation.navigate('Login', { message: 'Votre compte est vérifié, vous pouvez vous connecter.' });
+      await dispatch<any>(verifyResetCodeThunk({ email, code })).unwrap();
+      navigation.navigate('ResetPassword', { email, code });
     } catch (err: any) {
       setError(err.message || 'Code incorrect ou expiré.');
     } finally {
@@ -33,7 +33,7 @@ const VerifyCodeScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Vérification du téléphone</Text>
+      <Text style={styles.title}>Réinitialisation du mot de passe</Text>
       <Text style={styles.subtitle}>Un code a été envoyé à {email}</Text>
       <TextInput
         label="Code de vérification"
@@ -85,4 +85,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VerifyCodeScreen; 
+export default VerifyCodeResetScreen; 
