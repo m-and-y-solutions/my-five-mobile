@@ -36,18 +36,20 @@ const VerifyCodeScreen: React.FC<Props> = ({ route, navigation }) => {
       <Text style={styles.title}>Vérification du téléphone</Text>
       <Text style={styles.subtitle}>Un code a été envoyé à {email}</Text>
       <TextInput
-        label="Code de vérification"
+        label={<Text>Code de vérification <Text style={{color: 'red'}}>*</Text></Text>}
         value={code}
         onChangeText={setCode}
         keyboardType="number-pad"
         style={styles.input}
         maxLength={6}
+        mode="outlined"
+        activeOutlineColor="#4CAF50"
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Button mode="contained" onPress={handleVerify} loading={loading} disabled={loading || code.length !== 6}>
+      <Button mode="contained" onPress={handleVerify} loading={loading} disabled={loading || code.length !== 6} style={styles.button} buttonColor="#4CAF50" contentStyle={{ width: '100%' }}>
         Vérifier
       </Button>
-      <Button mode="text" onPress={() => navigation.navigate('Login')} style={{ marginTop: 12 }}>
+      <Button mode="text" onPress={() => navigation.navigate('Login')} style={{ marginTop: 12 }} textColor="#4CAF50">
         Retour à la connexion
       </Button>
     </View>
@@ -82,6 +84,9 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 12,
     textAlign: 'center',
+  },
+  button: {
+    marginTop: 12,
   },
 });
 

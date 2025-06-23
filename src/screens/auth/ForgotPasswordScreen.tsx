@@ -17,7 +17,6 @@ const ForgotPasswordScreen = () => {
   const loading = useSelector((state: RootState) => state.auth.loading);
   const error = useSelector((state: RootState) => state.auth.error);
 
-
   const handleForgotPassword = async () => {
     setLocalError('');
     setLocalSuccess('');
@@ -39,9 +38,9 @@ const ForgotPasswordScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.formContainer}>
-        <Text variant="headlineMedium" style={styles.title}>Mot de passe oublié</Text>
+        <Text style={styles.title}>Mot de passe oublié</Text>
         <TextInput
-          label="Email"
+          label={<Text>Email <Text style={{color: 'red'}}>*</Text></Text>}
           value={email}
           onChangeText={setEmail}
           mode="outlined"
@@ -61,6 +60,7 @@ const ForgotPasswordScreen = () => {
           disabled={loading}
           style={styles.button}
           buttonColor="#4CAF50"
+          contentStyle={{ width: '100%' }}
         >
           Envoyer
         </Button>
@@ -85,11 +85,15 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     paddingHorizontal: 20,
+    justifyContent: 'center',
+    flex: 1,
   },
   title: {
     textAlign: 'center',
     marginBottom: 30,
     color: '#4CAF50',
+    fontSize: 22,
+    fontWeight: 'bold',
   },
   input: {
     marginBottom: 16,
@@ -98,6 +102,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     borderRadius: 8,
+    width: '100%',
   },
   linkButton: {
     marginTop: 16,

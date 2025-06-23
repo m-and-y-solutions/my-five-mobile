@@ -56,20 +56,22 @@ const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Nouveau mot de passe</Text>
       <TextInput
-        label="Nouveau mot de passe"
+        label={<Text>Nouveau mot de passe <Text style={{color: 'red'}}>*</Text></Text>}
         value={password}
         onChangeText={setPassword}
         mode="outlined"
         secureTextEntry
         style={styles.input}
+        activeOutlineColor="#4CAF50"
       />
       <TextInput
-        label="Confirmer le mot de passe"
+        label={<Text>Confirmer le mot de passe <Text style={{color: 'red'}}>*</Text></Text>}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         mode="outlined"
         secureTextEntry
         style={styles.input}
+        activeOutlineColor="#4CAF50"
       />
       {localError ? <HelperText type="error" visible={true}>{localError}</HelperText> : null}
       {error && !localError ? <HelperText type="error" visible={true}>{error}</HelperText> : null}
@@ -80,6 +82,7 @@ const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
         disabled={loading}
         style={styles.button}
         buttonColor="#4CAF50"
+        contentStyle={{ width: '100%' }}
       >
         Réinitialiser
       </Button>
