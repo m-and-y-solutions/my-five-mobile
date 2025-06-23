@@ -2,7 +2,7 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 
 export type RootStackParamList = {
   Onboarding: undefined;
-  Login: undefined;
+  Login: { message?: string } | undefined;
   Register: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
   Settings: undefined;
@@ -17,6 +17,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   Matches: { isUserMatches?: boolean };
   GroupDetails: { groupId: string };
+  VerifyCode: { email: string };
 };
 
 export type MainTabParamList = {

@@ -180,6 +180,7 @@ const authService = {
     await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
   },
 
+
   async forgotPassword(email: string) {
     try {
       const response = await api.post(`${config.apiUrl}/auth/forgot-password`, { email });
@@ -209,6 +210,11 @@ const authService = {
       };
     }
   },
+  sendVerificationCode: (email: string) =>
+    api.post('/auth/send-code', { email }),
+
+  verifyCode: (email: string, code: string) =>
+    api.post('/auth/verify-code', { email, code })
 };
 
 export default authService; 

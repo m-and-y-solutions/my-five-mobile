@@ -151,6 +151,14 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+export const sendCode = createAsyncThunk('auth/sendCode', async (email: string) => {
+  await authService.sendVerificationCode(email);
+});
+
+export const checkCode = createAsyncThunk('auth/checkCode', async ({ email, code }: { email: string, code: string }) => {
+  await authService.verifyCode(email, code);
+});
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;

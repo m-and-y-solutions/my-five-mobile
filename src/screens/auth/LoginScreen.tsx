@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../store/slices/authSlice';
 import { AppDispatch, RootState } from '../../store';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from 'types/navigation.types';
+import { RootStackParamList } from '../../types/navigation.types';
+import { useRoute } from '@react-navigation/native';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -16,6 +17,8 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
+  const route = useRoute();
+  const message = (route.params as { message?: string })?.message;
 
   const handleLogin = async () => {
     try {
@@ -26,34 +29,38 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/My-Five-Logo-green-black.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
+    <View style={styles.container}>
+      {message ? (
+        <Text style={{ color: '#4CAF50', textAlign: 'center', marginBottom: 16 }}>{message}</Text>
+      ) : null}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../../assets/My-Five-Logo-green-black.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
 
-        <View style={styles.formContainer}>
-          <Text variant="headlineMedium" style={styles.title}>
-            Connexion
-          </Text>
+          <View style={styles.formContainer}>
+            <Text variant="headlineMedium" style={styles.title}>
+              Connexion
+            </Text>
 
-          <TextInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            activeOutlineColor="#4CAF50"
-          />
+            <TextInput
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              mode="outlined"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={styles.input}
+              activeOutlineColor="#4CAF50"
+            />
 
           <TextInput
             label="Mot de passe"
@@ -80,30 +87,31 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
             Mot de passe oublié ?
           </Button>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+            {error && <Text style={styles.errorText}>{error}</Text>}
 
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            loading={loading}
-            disabled={loading}
-            style={styles.button}
-            buttonColor="#4CAF50"
-          >
-            Se connecter
-          </Button>
+            <Button
+              mode="contained"
+              onPress={handleLogin}
+              loading={loading}
+              disabled={loading}
+              style={styles.button}
+              buttonColor="#4CAF50"
+            >
+              Se connecter
+            </Button>
 
-          <Button
-            mode="text"
-            onPress={() => navigation.navigate('Register')}
-            style={styles.linkButton}
-            textColor="#4CAF50"
-          >
-            Pas encore de compte ? S'inscrire
-          </Button>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('Register')}
+              style={styles.linkButton}
+              textColor="#4CAF50"
+            >
+              Pas encore de compte ? S'inscrire
+            </Button>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
