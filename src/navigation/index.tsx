@@ -18,6 +18,7 @@ import { restoreAuth, setOnboardingSeen } from "../store/slices/authSlice";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 // Main Screens
 import HomeScreen from "../screens/main/HomeScreen";
@@ -313,6 +314,7 @@ const Navigation = () => {
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       )}
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 };

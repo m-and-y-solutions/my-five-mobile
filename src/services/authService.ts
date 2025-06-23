@@ -178,7 +178,37 @@ const authService = {
 
   async clearTokens() {
     await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
-  }
+  },
+
+  async forgotPassword(email: string) {
+    try {
+      const response = await api.post(`${config.apiUrl}/auth/forgot-password`, { email });
+      return {
+        success: true,
+        message: response.data?.message || 'Si ce compte existe, un email a été envoyé.'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Erreur lors de la demande de réinitialisation',
+      };
+    }
+  },
+
+  async resetPassword({ email, token, newPassword }: { email: string; token: string; newPassword: string }) {
+    try {
+      const response = await api.post(`${config.apiUrl}/auth/reset-password`, { email, token, newPassword });
+      return {
+        success: true,
+        message: response.data?.message || 'Mot de passe réinitialisé avec succès.'
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Erreur lors de la réinitialisation',
+      };
+    }
+  },
 };
 
 export default authService; 

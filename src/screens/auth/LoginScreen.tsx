@@ -71,6 +71,15 @@ const LoginScreen = ({ navigation }: { navigation: LoginScreenNavigationProp }) 
             activeOutlineColor="#4CAF50"
           />
 
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('ForgotPassword')}
+            style={{ marginBottom: 8 }}
+            textColor="#4CAF50"
+          >
+            Mot de passe oublié ?
+          </Button>
+
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           <Button

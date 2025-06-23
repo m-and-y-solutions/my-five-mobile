@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, RefObject } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button, Text, useTheme, HelperText, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,12 +17,22 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
-const COMMUNES = [
-  'Anderlecht', 'Auderghem', 'Berchem-Sainte-Agathe', 'Bruxelles', 'Etterbeek',
-  'Evere', 'Forest', 'Ganshoren', 'Ixelles', 'Jette', 'Koekelberg', 'Molenbeek-Saint-Jean',
-  'Saint-Gilles', 'Saint-Josse-ten-Noode', 'Schaerbeek', 'Uccle', 'Watermael-Boitsfort',
-  'Woluwe-Saint-Lambert', 'Woluwe-Saint-Pierre'
+const COUNTRIES = [
+  { label: '🇧🇪 Belgique', value: 'Belgique' },
+  { label: '🇹🇳 Tunisie', value: 'Tunisie' },
 ];
+
+const COMMUNES_BY_COUNTRY: Record<string, string[]> = {
+  Belgique: [
+    'Anderlecht', 'Auderghem', 'Berchem-Sainte-Agathe', 'Bruxelles', 'Etterbeek',
+    'Evere', 'Forest', 'Ganshoren', 'Ixelles', 'Jette', 'Koekelberg', 'Molenbeek-Saint-Jean',
+    'Saint-Gilles', 'Saint-Josse-ten-Noode', 'Schaerbeek', 'Uccle', 'Watermael-Boitsfort',
+    'Woluwe-Saint-Lambert', 'Woluwe-Saint-Pierre'
+  ],
+  Tunisie: [
+    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 'Gafsa', 'Monastir', 'Ben Arous'
+  ]
+};
 
 const RegisterScreen = () => {
   const [firstName, setFirstName] = useState('');
@@ -44,6 +54,20 @@ const RegisterScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading: authLoading, error: authError } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
+  const [country, setCountry] = useState('Belgique');
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const scrollViewRef = useRef<ScrollView>(null);
+  const inputRefs: Record<string, RefObject<any>> = {
+    firstName: useRef<any>(null),
+    lastName: useRef<any>(null),
+    email: useRef<any>(null),
+    birthDate: useRef<any>(null),
+    commune: useRef<any>(null),
+    address: useRef<any>(null),
+    telephone: useRef<any>(null),
+    password: useRef<any>(null),
+    confirmPassword: useRef<any>(null),
+  };
 
   const handleImageSelected = (data: FormData) => {
     //to do test register xith image
@@ -51,21 +75,43 @@ const RegisterScreen = () => {
     setprofileImage(image);
   };
 
-  const handleRegister = async () => {
+  const validateFields = () => {
+    const errors: {[key: string]: string} = {};
+    if (!firstName) errors.firstName = 'Le prénom est requis';
+    if (!lastName) errors.lastName = 'Le nom est requis';
+    if (!email) errors.email = "L'email est requis";
+    if (!birthDate) errors.birthDate = 'La date de naissance est requise';
+    if (!commune) errors.commune = 'La commune/ville est requise';
+    if (!address) errors.address = "L'adresse est requise";
+    if (!telephone) errors.telephone = 'Le téléphone est requis';
+    if (!password) errors.password = 'Le mot de passe est requis';
+    if (!confirmPassword) errors.confirmPassword = 'La confirmation du mot de passe est requise';
     const passwordValidation = validatePassword(password);
+    if (password && !passwordValidation.isValid) errors.password = 'Le mot de passe ne respecte pas les critères de sécurité';
+    if (password && confirmPassword && password !== confirmPassword) errors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    setFieldErrors(errors);
+    return errors;
+  };
 
-    if (!passwordValidation.isValid) {
-      setError('Le mot de passe ne respecte pas les critères de sécurité');
-      return;
+  const scrollToFirstError = (errors: {[key: string]: string}) => {
+    const fieldsOrder = [
+      'firstName', 'lastName', 'email', 'birthDate', 'commune', 'address', 'telephone', 'password', 'confirmPassword'
+    ];
+    for (const field of fieldsOrder) {
+      if (errors[field] && inputRefs[field]?.current) {
+        inputRefs[field].current.focus && inputRefs[field].current.focus();
+        inputRefs[field].current.measure && inputRefs[field].current.measure((fx: any, fy: any, width: any, height: any, px: any, py: any) => {
+          scrollViewRef.current?.scrollTo({ y: py - 40, animated: true });
+        });
+        break;
+      }
     }
+  };
 
-    if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    if (!firstName || !lastName || !email || !password || !confirmPassword ) {
-      setError('Veuillez remplir tous les champs obligatoires');
+  const handleRegister = async () => {
+    const errors = validateFields();
+    if (Object.keys(errors).length > 0) {
+      scrollToFirstError(errors);
       return;
     }
 
@@ -79,8 +125,8 @@ const RegisterScreen = () => {
         email,
         password,
         birthDate: birthDate.toISOString(),
-        country: 'Belgique',
-        state: 'Bruxelles',
+        country,
+        state: country === 'Belgique' ? 'Bruxelles' : '',
         city: commune,
         address,
         telephone,
@@ -111,7 +157,7 @@ const RegisterScreen = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} ref={scrollViewRef} keyboardShouldPersistTaps="handled">
         <View style={styles.contentContainer}>
           <View style={styles.logoContainer}>
             <Image
@@ -128,8 +174,27 @@ const RegisterScreen = () => {
 
             <ImagePicker onImageSelected={handleImageSelected} />
          {/* Inputs avec nouveau style */}
+            <View style={[styles.pickerContainer, { borderColor: '#4CAF50' }]}>
+              <View style={styles.pickerIcon}>
+                <MaterialCommunityIcons name="flag" size={20} color="#4CAF50" />
+              </View>
+              <Picker
+                selectedValue={country}
+                onValueChange={(itemValue) => {
+                  setCountry(itemValue);
+                  setCommune('');
+                }}
+                style={styles.picker}
+                dropdownIconColor="#4CAF50"
+              >
+                {COUNTRIES.map((c) => (
+                  <Picker.Item key={c.value} label={c.label} value={c.value} />
+                ))}
+              </Picker>
+            </View>
+
             <TextInput
-              label="Prénom"
+              label={<Text>Prénom <Text style={{color: 'red'}}>*</Text></Text>}
               value={firstName}
               onChangeText={setFirstName}
               mode="outlined"
@@ -137,10 +202,13 @@ const RegisterScreen = () => {
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="account" color="#4CAF50" />}
+              ref={inputRefs.firstName}
+              error={!!fieldErrors.firstName}
             />
+            {fieldErrors.firstName && <HelperText type="error" visible={true}>{fieldErrors.firstName}</HelperText>}
 
             <TextInput
-              label="Nom"
+              label={<Text>Nom <Text style={{color: 'red'}}>*</Text></Text>}
               value={lastName}
               onChangeText={setLastName}
               mode="outlined"
@@ -148,10 +216,13 @@ const RegisterScreen = () => {
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="account" color="#4CAF50" />}
+              ref={inputRefs.lastName}
+              error={!!fieldErrors.lastName}
             />
+            {fieldErrors.lastName && <HelperText type="error" visible={true}>{fieldErrors.lastName}</HelperText>}
 
             <TextInput
-              label="Email"
+              label={<Text>Email <Text style={{color: 'red'}}>*</Text></Text>}
               value={email}
               onChangeText={setEmail}
               mode="outlined"
@@ -160,20 +231,24 @@ const RegisterScreen = () => {
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="email" color="#4CAF50" />}
+              ref={inputRefs.email}
+              error={!!fieldErrors.email}
             />
+            {fieldErrors.email && <HelperText type="error" visible={true}>{fieldErrors.email}</HelperText>}
 
-            {/* DatePicker avec nouveau style */}
             <TouchableOpacity
               style={[styles.datePickerButton, { borderColor: '#4CAF50' }]}
               onPress={() => setShowDatePicker(true)}
+              ref={inputRefs.birthDate}
             >
               <View style={styles.datePickerContent}>
                 <MaterialCommunityIcons name="calendar" size={20} color="#4CAF50" />
                 <Text style={styles.datePickerText}>
-                  Date de naissance: {birthDate.toLocaleDateString()}
+                  Date de naissance <Text style={{color: 'red'}}>*</Text>: {birthDate.toLocaleDateString()}
                 </Text>
               </View>
             </TouchableOpacity>
+            {fieldErrors.birthDate && <HelperText type="error" visible={true}>{fieldErrors.birthDate}</HelperText>}
 
             {showDatePicker && (
               <DateTimePicker
@@ -185,7 +260,6 @@ const RegisterScreen = () => {
               />
             )}
 
-            {/* Picker avec nouveau style */}
             <View style={[styles.pickerContainer, { borderColor: '#4CAF50' }]}>
               <View style={styles.pickerIcon}>
                 <MaterialCommunityIcons name="map-marker" size={20} color="#4CAF50" />
@@ -195,26 +269,31 @@ const RegisterScreen = () => {
                 onValueChange={(itemValue) => setCommune(itemValue)}
                 style={styles.picker}
                 dropdownIconColor="#4CAF50"
+                ref={inputRefs.commune}
               >
-                <Picker.Item label="Sélectionnez votre commune" value="" />
-                {COMMUNES.map((commune) => (
+                <Picker.Item label={country === 'Belgique' ? 'Sélectionnez votre commune' : 'Sélectionnez votre ville'} value="" />
+                {COMMUNES_BY_COUNTRY[country].map((commune) => (
                   <Picker.Item key={commune} label={commune} value={commune} />
                 ))}
               </Picker>
             </View>
+            {fieldErrors.commune && <HelperText type="error" visible={true}>{fieldErrors.commune}</HelperText>}
 
             <TextInput
-              label="Adresse"
+              label={<Text>Adresse <Text style={{color: 'red'}}>*</Text></Text>}
               value={address}
               onChangeText={setAddress}
               mode="outlined"
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="home" color="#4CAF50" />}
+              ref={inputRefs.address}
+              error={!!fieldErrors.address}
             />
+            {fieldErrors.address && <HelperText type="error" visible={true}>{fieldErrors.address}</HelperText>}
 
             <TextInput
-              label="Téléphone"
+              label={<Text>Téléphone <Text style={{color: 'red'}}>*</Text></Text>}
               value={telephone}
               onChangeText={setTelephone}
               mode="outlined"
@@ -222,10 +301,13 @@ const RegisterScreen = () => {
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="phone" color="#4CAF50" />}
+              ref={inputRefs.telephone}
+              error={!!fieldErrors.telephone}
             />
+            {fieldErrors.telephone && <HelperText type="error" visible={true}>{fieldErrors.telephone}</HelperText>}
 
             <TextInput
-              label="Mot de passe"
+              label={<Text>Mot de passe <Text style={{color: 'red'}}>*</Text></Text>}
               value={password}
               onChangeText={setPassword}
               mode="outlined"
@@ -240,14 +322,16 @@ const RegisterScreen = () => {
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="lock" color="#4CAF50" />}
+              ref={inputRefs.password}
+              error={!!fieldErrors.password}
             />
-
             <HelperText type="info" visible={true} style={styles.helperText}>
               Le mot de passe doit contenir au moins 6 caractères et un symbole (!@#$%^&(),.?":{'{}'}|&lt;&gt;)
             </HelperText>
+            {fieldErrors.password && <HelperText type="error" visible={true}>{fieldErrors.password}</HelperText>}
 
             <TextInput
-              label="Confirmer le mot de passe"
+              label={<Text>Confirmer le mot de passe <Text style={{color: 'red'}}>*</Text></Text>}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               mode="outlined"
@@ -262,7 +346,10 @@ const RegisterScreen = () => {
               style={styles.input}
               activeOutlineColor="#4CAF50"
               left={<TextInput.Icon icon="lock-check" color="#4CAF50" />}
+              ref={inputRefs.confirmPassword}
+              error={!!fieldErrors.confirmPassword}
             />
+            {fieldErrors.confirmPassword && <HelperText type="error" visible={true}>{fieldErrors.confirmPassword}</HelperText>}
 
             {error ? (
               <View style={styles.errorContainer}>
