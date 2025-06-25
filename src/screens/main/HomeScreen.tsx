@@ -54,6 +54,10 @@ const HomeScreen = () => {
     }
   };
 
+  const upcomingMatches = matches.filter(((match) => {
+    match.status === "upcoming"
+  }))
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchUpcomingMatches();
@@ -105,7 +109,7 @@ const HomeScreen = () => {
           </Button>
         </View>
         <FlatList
-          data={matches}
+          data={upcomingMatches}
           renderItem={({ item }) => (
             <MatchCard
               match={item}

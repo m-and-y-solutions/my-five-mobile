@@ -29,12 +29,19 @@ const MatchesScreen = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchMatches();
+      setActiveTab('upcoming');
       return () => {
         dispatch(resetMatches());
       };
-    }, [activeTab])
+    }, [dispatch])
   );
+
+  useEffect(() => {
+    if (!matches || matches.length === 0) {
+      fetchMatches();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchMatches = async () => {
     try {
