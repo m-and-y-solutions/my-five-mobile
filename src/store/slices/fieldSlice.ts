@@ -76,6 +76,7 @@ export const fetchFields = createAsyncThunk(
     cityId?: string;
     date?: Date;
     duration?: number;
+    maxPlayers?: number
   }) => {
     const token = await AsyncStorage.getItem('accessToken');
     if (!token) throw new Error('No token found');
@@ -84,6 +85,8 @@ export const fetchFields = createAsyncThunk(
     if (params?.cityId) queryParams.append('cityId', params.cityId);
     if (params?.date) queryParams.append('date', params.date.toISOString());
     if (params?.duration) queryParams.append('duration', params.duration.toString());
+    if (params?.maxPlayers) queryParams.append('maxPlayers', params.maxPlayers.toString());
+
     
     const response = await api.get(`${config.serverUrl}/api/fields?${queryParams.toString()}`, {
       headers: {
