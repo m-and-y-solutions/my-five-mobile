@@ -15,8 +15,11 @@ export interface Group {
 }
 
 const groupService = {
-  async getGroups(): Promise<Group[]> {
-    const response = await api.get(`${config.apiUrl}/groups`);
+  async getGroups(country: string): Promise<Group[]> {
+    const response = await api.get(`${config.apiUrl}/groups`, {
+      params: { country },
+    }
+    );
     // On suppose que l'API renvoie la liste des groupes et qu'on doit déterminer isMember pour chaque groupe
     // Si l'API ne renvoie pas isMember, il faudra faire un appel supplémentaire par groupe (peu optimal)
     // Ici, on suppose que l'API renvoie déjà isMember OU que le backend est adapté pour le faire

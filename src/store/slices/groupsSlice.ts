@@ -1,8 +1,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import groupService, { Group } from '../../services/groupService';
 
-export const fetchGroups = createAsyncThunk('groups/fetchGroups', async () => {
-  return await groupService.getGroups();
+export const fetchGroups = createAsyncThunk('groups/fetchGroups', 
+  async (_, { getState }) => {
+  const state = getState() as any;
+
+  const country = state.auth.user?.country;
+
+  return await groupService.getGroups(country);
 });
 
 export const joinGroup = createAsyncThunk('groups/joinGroup', async (groupId: string, { dispatch }) => {

@@ -129,6 +129,7 @@ const matchService = {
     status?: string;
     type?: string;
     visibility?: string;
+    country?: string
   }) {
     const response = await api.get(`${config.apiUrl}/matches`, {
       params: filters,

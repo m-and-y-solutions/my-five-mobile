@@ -9,8 +9,7 @@ import { fetchGroups, joinGroup, leaveGroup } from '../../store/slices/groupsSli
 import { Group } from '../../services/groupService';
 import { RootStackParamList } from 'types/navigation.types';
 
-// Types navigation
-// (adapte si besoin)
+
 type GroupsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'GroupDetails'>;
 type GroupsScreenRouteProp = RouteProp<RootStackParamList, 'Groups'>;
 
@@ -29,10 +28,8 @@ const GroupsScreen = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      if (!groups || groups.length === 0) {
-        dispatch(fetchGroups());
-      }
-    }, [groups, dispatch])
+      dispatch(fetchGroups());
+    }, [dispatch])
   );
 
   const onRefresh = async () => {
