@@ -48,7 +48,7 @@ const HomeScreen = () => {
 
   const fetchUpcomingMatches = async () => {
     try {
-      await dispatch(fetchAllMatches("upcoming"));
+      await dispatch(fetchAllMatches({status: "upcoming"}));
     } catch (err: any) {
       console.error("Error in fetchUpcomingMatches:", err);
     }

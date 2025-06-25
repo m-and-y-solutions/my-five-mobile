@@ -13,26 +13,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { validatePassword } from '../../utils/auth';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { COMMUNES_BY_COUNTRY, COUNTRIES } from 'constants/countries.constants';
 
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
-const COUNTRIES = [
-  { label: '🇧🇪 Belgique', value: 'Belgique' },
-  { label: '🇹🇳 Tunisie', value: 'Tunisie' },
-];
 
-const COMMUNES_BY_COUNTRY: Record<string, string[]> = {
-  Belgique: [
-    'Anderlecht', 'Auderghem', 'Berchem-Sainte-Agathe', 'Bruxelles', 'Etterbeek',
-    'Evere', 'Forest', 'Ganshoren', 'Ixelles', 'Jette', 'Koekelberg', 'Molenbeek-Saint-Jean',
-    'Saint-Gilles', 'Saint-Josse-ten-Noode', 'Schaerbeek', 'Uccle', 'Watermael-Boitsfort',
-    'Woluwe-Saint-Lambert', 'Woluwe-Saint-Pierre'
-  ],
-  Tunisie: [
-    'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 'Gafsa', 'Monastir', 'Ben Arous'
-  ]
-};
 
 const RegisterScreen = () => {
   const [firstName, setFirstName] = useState('');

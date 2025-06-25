@@ -5,11 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation.types';
-import { CITIES } from 'constants/countries.constants';
+import { CITIES, COMMUNES_BY_COUNTRY, COUNTRIES } from 'constants/countries.constants';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchFields } from '../../store/slices/fieldSlice';
-import { createMatch } from '../../store/slices/matchSlice';
+import { createMatch, fetchAllMatches } from '../../store/slices/matchSlice';
 import { Field } from '../../store/slices/fieldSlice';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
@@ -30,19 +30,19 @@ const CreateMatchScreen = () => {
   const myGroups = useSelector((state: RootState) =>
     state.groups.groups.filter((g) => g.creatorId === userId)
   );
-  
+
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('10');
   const [team1Name, setTeam1Name] = useState('');
   const [team2Name, setTeam2Name] = useState('');
   const [matchVisibility, setMatchVisibility] = useState<'public' | 'private' | 'group'>('public');
-  const [selectedCity, setSelectedCity] = useState<{id: string, name: string} | null>(null);
+  const [selectedCity, setSelectedCity] = useState<{ id: string, name: string } | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [fieldModalVisible, setFieldModalVisible] = useState(false);
   const [fieldsByCity, setFieldsByCity] = useState<FieldsByCity>({});
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [duration, setDuration] = useState('60');
@@ -50,6 +50,9 @@ const CreateMatchScreen = () => {
   const [isFieldSelectionEnabled, setIsFieldSelectionEnabled] = useState(false);
   const [title, setTitle] = useState('');
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const userCountry = useSelector((state: RootState) => state.auth.user?.country || 'Belgique');
+  const communesOrCities = userCountry === 'Belgique' ? COMMUNES_BY_COUNTRY.Belgique : COMMUNES_BY_COUNTRY.Tunisie;
+  const cityLabel = userCountry === 'Belgique' ? 'Commune' : 'Ville';
 
   const isFieldAvailable = (field: Field) => {
     if (!field.isAvailable) return false;
@@ -57,15 +60,15 @@ const CreateMatchScreen = () => {
 
     const [day, month, year] = date.split('/').map(Number);
     const [hours, minutes] = time.split(':').map(Number);
-    
+
     const selectedDateTime = new Date(year, month - 1, day, hours, minutes);
     const endDateTime = new Date(selectedDateTime.getTime() + parseInt(duration) * 60000);
 
     const hasConflictingBooking = field.bookings?.some(booking => {
       const bookingStart = new Date(booking.startTime);
       const bookingEnd = new Date(booking.endTime);
-      
-      const isSameDay = 
+
+      const isSameDay =
         bookingStart.getFullYear() === selectedDateTime.getFullYear() &&
         bookingStart.getMonth() === selectedDateTime.getMonth() &&
         bookingStart.getDate() === selectedDateTime.getDate();
@@ -109,15 +112,15 @@ const CreateMatchScreen = () => {
   }, [date, time, duration]);
 
   const validateTime = (selectedDate: Date) => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors: { [key: string]: string } = {};
     const dayOfWeek = selectedDate.getDay();
     const hours = selectedDate.getHours();
-    
+
     console.log('=== Validation Time ===');
     console.log('Original Date:', selectedDate.toString());
     console.log('hours', hours);
     console.log('dayOfWeek', dayOfWeek);
-    
+
     let isValidTime = false;
     if (dayOfWeek === 0) { // Dimanche
       isValidTime = (hours >= 10 && hours < 24) || (hours >= 0 && hours < 2);
@@ -141,13 +144,13 @@ const CreateMatchScreen = () => {
   const handleDateChange = (selectedDate: Date) => {
     const timeZone = 'Europe/Brussels';
     const zonedDate = toZonedTime(selectedDate, timeZone);
-    
+
     if (!validateTime(zonedDate)) {
       // Si la validation échoue, on ne change pas la date
       setShowDatePicker(false);
       return;
     }
-    
+
     setShowDatePicker(false);
     setSelectedDate(zonedDate);
     setDate(format(zonedDate, 'yyyy-MM-dd'));
@@ -157,8 +160,8 @@ const CreateMatchScreen = () => {
 
 
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-    
+    const newErrors: { [key: string]: string } = {};
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDateObj = new Date(selectedDate);
@@ -198,23 +201,29 @@ const CreateMatchScreen = () => {
         const selectedFieldData = fields.find(f => f.id === selectedField);
         const timeZone = 'Europe/Brussels';
         const zonedDate = toZonedTime(selectedDate, timeZone);
-        
+
         await dispatch(createMatch({
           title: title || `${selectedFieldData?.name} - ${format(zonedDate, 'dd/MM/yyyy')}`,
-          date: selectedDate,
+          date: zonedDate,
+          time,
           maxPlayers: parseInt(maxPlayers),
           type: 'friendly',
-          visibility: matchVisibility ,
+          visibility: matchVisibility,
+          price: selectedFieldData?.price,
+          currency: selectedFieldData?.currency,
           fieldId: selectedField!,
           location: selectedFieldData?.address || '',
           team1Name: team1Name || undefined,
           team2Name: team2Name || undefined,
           duration: parseInt(duration),
           groupIds: matchVisibility === 'group' ? selectedGroupIds : undefined,
+          country: userCountry,
+          city: selectedCity?.name,
         }));
-        if(matchVisibility==='group'){
+        if (matchVisibility === 'group') {
           dispatch(fetchGroups());
         }
+        await dispatch(fetchAllMatches({}));
         navigation.goBack();
       } catch (error: any) {
         console.error('Error creating match:', error);
@@ -236,11 +245,11 @@ const CreateMatchScreen = () => {
 
   const handleFieldSelection = async () => {
     if (!isFieldSelectionEnabled) return;
-    
+
     try {
       const [day, month, year] = date.split('/');
       const formattedDate = `${year}-${month}-${day}`;
-      
+
       await dispatch(fetchFields({
         cityId: selectedCity?.name || undefined,
         date: selectedDate,
@@ -261,18 +270,18 @@ const CreateMatchScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
             <View style={styles.form}>
-           
+
 
               <View style={styles.toggleContainer}>
                 <Text style={styles.toggleLabel}>Visibilité du match</Text>
@@ -383,7 +392,7 @@ const CreateMatchScreen = () => {
               </View>
 
               <View style={styles.inputContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setShowDurationModal(true)}
                   style={styles.touchableInput}
                 >
@@ -405,7 +414,7 @@ const CreateMatchScreen = () => {
                   animationType="slide"
                   onRequestClose={() => setShowDurationModal(false)}
                 >
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.modalContainer}
                     activeOpacity={1}
                     onPress={() => setShowDurationModal(false)}
@@ -428,8 +437,8 @@ const CreateMatchScreen = () => {
                           }}
                           style={styles.listItem}
                           left={props => (
-                            <List.Icon 
-                              {...props} 
+                            <List.Icon
+                              {...props}
                               icon={duration === '60' ? "check-circle" : "circle-outline"}
                               color="#4CAF50"
                             />
@@ -443,8 +452,8 @@ const CreateMatchScreen = () => {
                           }}
                           style={styles.listItem}
                           left={props => (
-                            <List.Icon 
-                              {...props} 
+                            <List.Icon
+                              {...props}
                               icon={duration === '90' ? "check-circle" : "circle-outline"}
                               color="#4CAF50"
                             />
@@ -482,15 +491,20 @@ const CreateMatchScreen = () => {
                 />
               </View>
 
+              {/* <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Pays</Text>
+                <Text style={{ padding: 12, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, backgroundColor: '#f5f5f5' }}>{userCountry}</Text>
+              </View> */}
+
               <View style={styles.inputContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setCityModalVisible(true)}
                   style={styles.touchableInput}
                 >
                   <TextInput
-                    label="Commune"
+                    label={cityLabel}
                     value={selectedCity?.name || ''}
-                    placeholder="Sélectionner une commune"
+                    placeholder={`Sélectionner une ${cityLabel}`}
                     style={styles.input}
                     mode="outlined"
                     left={<TextInput.Icon icon="city" />}
@@ -502,47 +516,24 @@ const CreateMatchScreen = () => {
                   />
                 </TouchableOpacity>
                 {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-                <Modal
-                  visible={cityModalVisible}
-                  transparent
-                  animationType="slide"
-                  onRequestClose={() => setCityModalVisible(false)}
-                >
-                  <TouchableOpacity 
-                    style={styles.modalContainer}
-                    activeOpacity={1}
-                    onPress={() => setCityModalVisible(false)}
-                  >
-                    <View style={styles.modalContent}>
-                      <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Sélectionner une commune</Text>
-                        <IconButton
-                          icon="close"
-                          size={24}
-                          onPress={() => setCityModalVisible(false)}
-                        />
-                      </View>
-                      <ScrollView style={styles.modalScrollView}>
-                        {CITIES.map(city => (
-                          <List.Item
-                            key={city.id}
-                            title={city.name}
-                            onPress={() => {
-                              setSelectedCity({ id: city.id, name: city.name });
-                              setSelectedField(null);
-                              setCityModalVisible(false);
-                            }}
-                            style={styles.listItem}
-                          />
+                <Modal visible={cityModalVisible} animationType="slide" transparent>
+                  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center' }}>
+                    <View style={{ backgroundColor: '#fff', margin: 32, borderRadius: 12, padding: 16, maxHeight: '70%' }}>
+                      <ScrollView>
+                        {communesOrCities.map((city, idx) => (
+                          <TouchableOpacity key={city} onPress={() => { setSelectedCity({ id: String(idx), name: city }); setCityModalVisible(false); }} style={{ padding: 12 }}>
+                            <Text>{city}</Text>
+                          </TouchableOpacity>
                         ))}
                       </ScrollView>
+                      <Button onPress={() => setCityModalVisible(false)} style={{ marginTop: 8 }}>Fermer</Button>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 </Modal>
               </View>
 
               <View style={styles.inputContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={handleFieldSelection}
                   disabled={!isFieldSelectionEnabled}
                 >
@@ -568,7 +559,7 @@ const CreateMatchScreen = () => {
                   animationType="slide"
                   onRequestClose={() => setFieldModalVisible(false)}
                 >
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.modalContainer}
                     activeOpacity={1}
                     onPress={() => setFieldModalVisible(false)}
@@ -602,8 +593,8 @@ const CreateMatchScreen = () => {
                               }}
                               style={styles.listItem}
                               left={props => (
-                                <List.Icon 
-                                  {...props} 
+                                <List.Icon
+                                  {...props}
                                   icon="check-circle"
                                   color="#4CAF50"
                                 />

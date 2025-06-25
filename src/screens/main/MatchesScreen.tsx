@@ -41,7 +41,7 @@ const MatchesScreen = () => {
       if (route.params?.isUserMatches) {
         await dispatch(fetchUserMatches(activeTab));
       } else {
-        await dispatch(fetchAllMatches(activeTab));
+        await dispatch(fetchAllMatches({status:activeTab}));
       }
     } catch (err: any) {
       console.error('Error in fetchMatches:', err);
