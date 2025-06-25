@@ -8,9 +8,12 @@ import { useSelector } from 'react-redux';
 export const fetchAllMatches = createAsyncThunk(
   'match/fetchAllMatches',
   async ({ status }: { status?: string } = {}, { getState }) => {
-    const state = getState() as any;
-    const country = state.auth.user?.country;
-    return await matchService.getMatches({ status, visibility: 'public', country });
+    // const state = getState() as any;
+    // const country = state.auth.user?.country;
+    const userStr = await AsyncStorage.getItem('user');
+    if (!userStr) throw new Error('No user found');
+    const user = JSON.parse(userStr);
+    return await matchService.getMatches({ status, visibility: 'public', country: user.country });
   }
 );
 

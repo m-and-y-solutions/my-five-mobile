@@ -26,9 +26,9 @@ const CreateMatchScreen = () => {
   const navigation = useNavigation<CreateMatchScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const { fields, loading: fieldsLoading, error: fieldsError } = useSelector((state: RootState) => state.field);
-  const userId = useSelector((state: RootState) => state.auth.user?.id);
+  const user = useSelector((state: RootState) => state.auth.user);
   const myGroups = useSelector((state: RootState) =>
-    state.groups.groups.filter((g) => g.creatorId === userId)
+    state.groups.groups.filter((g) => g.creatorId === user.id)
   );
 
   const [date, setDate] = useState('');
@@ -53,6 +53,7 @@ const CreateMatchScreen = () => {
   const userCountry = useSelector((state: RootState) => state.auth.user?.country || 'Belgique');
   const communesOrCities = userCountry === 'Belgique' ? COMMUNES_BY_COUNTRY.Belgique : COMMUNES_BY_COUNTRY.Tunisie;
   const cityLabel = userCountry === 'Belgique' ? 'Commune' : 'Ville';
+  const [showMaxPlayersModal, setShowMaxPlayersModal] = useState(false);
 
   const isFieldAvailable = (field: Field) => {
     if (!field.isAvailable) return false;
@@ -613,16 +614,76 @@ const CreateMatchScreen = () => {
               </View>
 
               <View style={styles.inputContainer}>
-                <TextInput
-                  label="Nombre de joueurs"
-                  value={maxPlayers}
-                  style={styles.input}
-                  mode="outlined"
-                  left={<TextInput.Icon icon="account-group" />}
-                  outlineColor="#BDBDBD"
-                  activeOutlineColor="#BDBDBD"
-                  disabled={true}
-                />
+                {user?.country === 'Tunisie' ? (
+                  <TouchableOpacity onPress={() => setShowMaxPlayersModal(true)}>
+                    <TextInput
+                      label="Nombre de joueurs"
+                      value={maxPlayers}
+                      style={styles.input}
+                      mode="outlined"
+                      left={<TextInput.Icon icon="account-group" />}
+                      outlineColor="#4CAF50"
+                      activeOutlineColor="#4CAF50"
+                      editable={false}
+                      right={<TextInput.Icon icon="chevron-down" />}
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <TextInput
+                    label="Nombre de joueurs"
+                    value="10"
+                    style={styles.input}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="account-group" />}
+                    outlineColor="#BDBDBD"
+                    activeOutlineColor="#BDBDBD"
+                    disabled
+                  />
+                )}
+                {/* Modal pour Tunisie */}
+                <Modal
+                  visible={showMaxPlayersModal}
+                  transparent
+                  animationType="slide"
+                  onRequestClose={() => setShowMaxPlayersModal(false)}
+                >
+                  <TouchableOpacity
+                    style={styles.modalContainer}
+                    activeOpacity={1}
+                    onPress={() => setShowMaxPlayersModal(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Sélectionner le nombre de joueurs</Text>
+                        <IconButton
+                          icon="close"
+                          size={24}
+                          onPress={() => setShowMaxPlayersModal(false)}
+                        />
+                      </View>
+                      <ScrollView style={styles.modalScrollView}>
+                        {["10", "12", "14"].map(option => (
+                          <List.Item
+                            key={option}
+                            title={`${option} joueurs`}
+                            onPress={() => {
+                              setMaxPlayers(option);
+                              setShowMaxPlayersModal(false);
+                            }}
+                            style={styles.listItem}
+                            left={props => (
+                              <List.Icon
+                                {...props}
+                                icon={maxPlayers === option ? "check-circle" : "circle-outline"}
+                                color="#4CAF50"
+                              />
+                            )}
+                          />
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
               </View>
 
               <Button
