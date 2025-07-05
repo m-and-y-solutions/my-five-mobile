@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Text, Button, Avatar, List, useTheme, ActivityIndicator, MD3Theme } from 'react-native-paper';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, ProfileStackParamList } from '../../types/navigation.types';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../../store/slices/authSlice';
+import { deleteAccount, logout } from '../../store/slices/authSlice';
 import { fetchUserStats, fetchUserSocial, fetchUserById } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store';
 import config from '../../config/config';
 import { fetchGroups } from '../../store/slices/groupsSlice';
-import GroupsScreen from './GroupsScreen';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList, 'ProfileMain'>;
 type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
@@ -75,6 +74,31 @@ const ProfileScreen = () => {
   useEffect(() => {
     dispatch(fetchGroups());
   }, [dispatch]);
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      "Supprimer le compte",
+      "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            const result = await dispatch(deleteAccount());
+            if (deleteAccount.fulfilled.match(result)) {
+              Alert.alert("Compte supprimé", "Votre compte a bien été supprimé.");
+              // Redirige ou logout ici si besoin
+              // navigation.replace('Login');
+              // dispatch(logout());
+            } else {
+              Alert.alert("Erreur", "Une erreur est survenue lors de la suppression.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (!user) {
     return (
@@ -192,14 +216,15 @@ const ProfileScreen = () => {
               right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('EditProfile')}
             />
-            {/* <List.Item
-              title="Préférences"
-              titleStyle={{ color: theme.colors.onSurface }}
-              description="Définir vos préférences de match"
-              descriptionStyle={{ color: theme.colors.onSurface }}
-              left={props => <List.Icon {...props} icon="cog" color={theme.colors.primary} />}
-              right={(props: { color: string; style?: any }) => <List.Icon {...props} icon="chevron-right" color={theme.colors.primary} />}
-            /> */}
+            <Button
+              mode="outlined"
+              style={{ borderColor: '#e53935', marginTop: 16, borderRadius: 8 }}
+              textColor="#e53935"
+              onPress={handleDeleteAccount}
+              icon="delete-outline"
+            >
+              Supprimer le compte
+            </Button>
           </View>
 
           <View style={styles(theme).section}>

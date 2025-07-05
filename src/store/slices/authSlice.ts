@@ -183,6 +183,15 @@ export const resetPasswordWithCodeThunk = createAsyncThunk(
   }
 );
 
+export const deleteAccount = createAsyncThunk(
+  'auth/deleteAccount',
+  async (_, { dispatch }) => {
+    await authService.deleteAccount();
+    // Optionnel : déconnecte l'utilisateur après suppression
+    dispatch(logout());
+  }
+);
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -387,6 +396,12 @@ const authSlice = createSlice({
       .addCase(resetPasswordWithCodeThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string || 'Erreur lors de la réinitialisation avec code';
+      })
+      .addCase(deleteAccount.fulfilled, (state) => {
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.user = null;
+        state.error = null;
       })
       ;
   },

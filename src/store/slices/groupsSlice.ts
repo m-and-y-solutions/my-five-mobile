@@ -37,16 +37,33 @@ export const deleteGroup = createAsyncThunk('groups/deleteGroup', async (groupId
   dispatch(fetchGroups());
 });
 
+export const getGroupJoinRequests = createAsyncThunk(
+  'groups/getGroupJoinRequests',
+  async (groupId: string) => await groupService.fetchGroupJoinRequests(groupId)
+);
+
+export const respondToJoinRequest = createAsyncThunk(
+  'groups/respondToJoinRequest',
+  async ({ requestId, action }: { requestId: string, action: 'accept' | 'reject' | 'block' }) =>
+    await groupService.handleJoinRequest(requestId, action)
+);
+
 interface GroupsState {
   groups: Group[];
   loading: boolean;
   error: string | null;
+  joinRequests: any[];
+  joinRequestsLoading: boolean;
+  joinRequestsError: string | null;
 }
 
 const initialState: GroupsState = {
   groups: [],
   loading: false,
   error: null,
+  joinRequests: [],
+  joinRequestsLoading: false,
+  joinRequestsError: null,
 };
 
 const groupsSlice = createSlice({
@@ -121,6 +138,18 @@ const groupsSlice = createSlice({
       .addCase(deleteGroup.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Erreur lors de la suppression du groupe';
+      })
+      .addCase(getGroupJoinRequests.pending, (state) => { state.joinRequestsLoading = true; })
+      .addCase(getGroupJoinRequests.fulfilled, (state, action) => {
+        state.joinRequestsLoading = false;
+        state.joinRequests = action.payload;
+      })
+      .addCase(getGroupJoinRequests.rejected, (state, action) => {
+        state.joinRequestsLoading = false;
+        state.joinRequestsError = action.error.message ?? null;
+      })
+      .addCase(respondToJoinRequest.fulfilled, (state, action) => {
+        state.joinRequests = state.joinRequests.filter(r => r.id !== action.meta.arg.requestId);
       });
   },
 });

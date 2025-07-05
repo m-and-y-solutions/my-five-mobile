@@ -12,6 +12,7 @@ export interface Group {
   rules?: string[];
   members?: User[];
   matches?: Match[];
+  joinRequestStatus?: string;
 }
 
 const groupService = {
@@ -49,6 +50,16 @@ const groupService = {
   async deleteGroup(groupId: string) {
     const response = await api.delete(`${config.apiUrl}/groups/${groupId}`);
     return response.data;
+  },
+
+  async fetchGroupJoinRequests(groupId: string) {
+    const { data } = await api.get(`/groups/${groupId}/join-requests`);
+    return data;
+  },
+
+  async handleJoinRequest(requestId: string, action: 'accept' | 'reject' | 'block') {
+    const { data } = await api.post(`/groups/join-requests/${requestId}`, { action });
+    return data;
   },
 };
 

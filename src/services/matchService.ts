@@ -18,6 +18,9 @@ export interface Match {
   team2Score?: number;
   duration?: number;
   creatorId?: string;
+  country?: string;
+  state?:string;
+  city?: string;
   creator: {
     id: string;
     firstName: string;
