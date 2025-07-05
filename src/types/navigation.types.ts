@@ -17,6 +17,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   Matches: { isUserMatches?: boolean };
   GroupDetails: { groupId: string };
+  GroupJoinRequests: { groupId: string };
   VerifyCode: { email: string };
   VerifyCodeReset: { email: string };
   ResetPassword: { email: string; code: string };

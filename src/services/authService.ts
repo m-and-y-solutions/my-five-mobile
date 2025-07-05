@@ -245,6 +245,10 @@ const authService = {
       };
     }
   },
+
+  async deleteAccount() {
+    return await api.delete('/auth/me');
+  },
 };
 
 export default authService; 

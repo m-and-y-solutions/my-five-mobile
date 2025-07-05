@@ -5,7 +5,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchGroups, joinGroup, leaveGroup } from '../../store/slices/groupsSlice';
+import { fetchGroups, joinGroup, leaveGroup, getGroupJoinRequests, respondToJoinRequest } from '../../store/slices/groupsSlice';
 import { Group } from '../../services/groupService';
 import { RootStackParamList } from 'types/navigation.types';
 
@@ -23,7 +23,7 @@ const GroupsScreen = () => {
   const isUserGroups = route.params?.isUserGroups;
 
   const dispatch = useDispatch<AppDispatch>();
-  const { groups, loading, error } = useSelector((state: RootState) => state.groups);
+  const { groups, loading, error, joinRequests, joinRequestsLoading } = useSelector((state: RootState) => state.groups);
   const userId = useSelector((state: RootState) => state.auth.user?.id);
 
   useFocusEffect(
@@ -62,6 +62,7 @@ const GroupsScreen = () => {
   // Actions
   const [joining, setJoining] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   const handleJoin = async (groupId: string) => {
     setJoining(groupId);
@@ -73,6 +74,11 @@ const GroupsScreen = () => {
     setLeaving(groupId);
     await dispatch(leaveGroup(groupId));
     setLeaving(null);
+  };
+
+  const handleShowJoinRequests = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    dispatch(getGroupJoinRequests(groupId));
   };
 
   // Rendu
@@ -95,6 +101,7 @@ const GroupsScreen = () => {
       <ScrollView
         style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View style={styles.section}>
           <Searchbar
@@ -147,6 +154,14 @@ const GroupsScreen = () => {
                 <View style={styles.groupInfo}>
                   <Text style={styles.groupName}>{group.name}</Text>
                   <Text style={styles.groupDescription}>{group.description}</Text>
+                  {group.creatorId === userId && (
+                    <Text
+                      style={styles.joinRequestsLink}
+                      onPress={() => navigation.navigate('GroupJoinRequests', { groupId: group.id })}
+                    >
+                      Voir demandes d'adhésion
+                    </Text>
+                  )}
                 </View>
                 {group.isMember ? (
                   <IconButton
@@ -154,8 +169,20 @@ const GroupsScreen = () => {
                     size={28}
                     iconColor="#e53935"
                     onPress={() => handleLeave(group.id)}
-                    disabled={leaving === group.id}
+                    disabled={leaving === group.id || group.creatorId === userId}
                   />
+                ) : group.joinRequestStatus === 'pending' ? (
+                  <Button disabled>En attente</Button>
+                ) : group.joinRequestStatus === 'blocked' ? (
+                  <View style={{ alignItems: 'center' }}>
+                    <IconButton
+                      icon="minus-circle-outline"
+                      size={28}
+                      iconColor="#bdbdbd"
+                      disabled
+                    />
+                    <Text style={{ color: '#bdbdbd', fontSize: 12 }}>Bloqué</Text>
+                  </View>
                 ) : (
                   <IconButton
                     icon="account-plus"
@@ -258,6 +285,14 @@ const styles = StyleSheet.create({
     right: 16,
     bottom: 32,
     zIndex: 10,
+  },
+  joinRequestsLink: {
+    color: '#4CAF50',
+    marginTop: 6,
+    marginBottom: 2,
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
+    alignSelf: 'flex-start',
   },
 });
 

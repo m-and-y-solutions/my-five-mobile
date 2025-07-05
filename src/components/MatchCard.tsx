@@ -165,7 +165,9 @@ const MatchCard = ({ match, onPress, onJoinSuccess }: MatchCardProps) => {
             <View style={styles.matchDetails}>
               <Text style={styles.detailText}>Date: {new Date(match.date).toLocaleDateString()}</Text>
               <Text style={styles.detailText}>Heure: {match.time}</Text>
-              <Text style={styles.detailText}>Prix: {match.price} {match.currency}</Text>
+              <Text style={styles.detailText}>
+                Prix: {match.price} {match.country === 'Tunisie' ? 'TND' : 'EUR'}
+              </Text>
               {match.team1 && match.team2 && (
                 <Text style={styles.scoreText}>
                   Score: {match.team1.score} - {match.team2.score}

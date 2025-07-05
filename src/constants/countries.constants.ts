@@ -38,6 +38,6 @@ export const CITIES: City[] = [
       'Woluwe-Saint-Lambert', 'Woluwe-Saint-Pierre'
     ],
     Tunisie: [
-      'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 'Gafsa', 'Monastir', 'Ben Arous'
+      'Tunis', 'Sfax', 'Sousse', 'Kairouan', 'Bizerte', 'Gabès', 'Ariana', 'Gafsa', 'Monastir', 'Ben Arous', 'La Manouba'
     ]
   };
