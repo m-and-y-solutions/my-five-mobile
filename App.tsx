@@ -54,22 +54,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export default function App() {
-  const dispatch = useDispatch();
-  const userId = useSelector((state: RootState) => state.auth.user?.id);
-
-  useEffect(() => {
-    const socket = io(config.serverUrl);
-    if (userId) {
-      socket.emit('register', userId);
-    }
-    socket.on('notification', (notif) => {
-      dispatch(addNotification(notif));
-    });
-    return () => {
-      socket.off('notification');
-      socket.disconnect();
-    };
-  }, [userId, dispatch]);
+ 
 
   React.useEffect(() => {
     const testAsyncStorage = async () => {

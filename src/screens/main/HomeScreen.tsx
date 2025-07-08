@@ -141,11 +141,6 @@ const HomeScreen = () => {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <IconButton
-        icon="bell"
-        size={28}
-        onPress={() => navigation.navigate('Notifications')}
-      />
       {renderContent()}
       <FAB
         icon="plus"
