@@ -163,6 +163,11 @@ const GroupsScreen = () => {
                     </Text>
                   )}
                 </View>
+                {!group.isMember && (
+                  <Text style={{ color: '#bdbdbd', fontSize: 12, marginTop: 4 }}>
+                    Rejoignez le groupe pour accéder
+                  </Text>
+                )}
                 {group.isMember ? (
                   <IconButton
                     icon="exit-to-app"
