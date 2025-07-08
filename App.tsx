@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Provider } from "react-redux";
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 import Navigation from './src/navigation';
-import { store } from './src/store';
+import { RootState, store } from './src/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LogBox, View, Text } from 'react-native';
 import { LightTheme } from './src/theme';
+import { io } from 'socket.io-client';
+import { useSelector, useDispatch } from 'react-redux';
+import { addNotification } from 'store/slices/notificationSlice';
+import config from 'config/config';
 
 // Ignore specific warnings
 LogBox.ignoreLogs([
@@ -50,6 +54,23 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export default function App() {
+  const dispatch = useDispatch();
+  const userId = useSelector((state: RootState) => state.auth.user?.id);
+
+  useEffect(() => {
+    const socket = io(config.serverUrl);
+    if (userId) {
+      socket.emit('register', userId);
+    }
+    socket.on('notification', (notif) => {
+      dispatch(addNotification(notif));
+    });
+    return () => {
+      socket.off('notification');
+      socket.disconnect();
+    };
+  }, [userId, dispatch]);
+
   React.useEffect(() => {
     const testAsyncStorage = async () => {
       try {
