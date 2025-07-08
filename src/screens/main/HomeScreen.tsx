@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Text,
   FAB,
+  IconButton,
 } from "react-native-paper";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -21,6 +22,7 @@ import { fetchAllMatches, resetMatches } from "../../store/slices/matchSlice";
 import MatchCard from "../../components/MatchCard";
 import { LightTheme as theme } from "../../theme";
 import { RootStackParamList } from "types/navigation.types";
+import { fetchNotifications } from '../../store/slices/notificationSlice';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -36,10 +38,12 @@ const HomeScreen = () => {
   const { matches, loading, error } = useSelector(
     (state: RootState) => state.match
   );
+  const { notifications, loading: notificationsLoading, error: notificationsError } = useSelector((state: RootState) => state.notifications);
 
   useFocusEffect(
     React.useCallback(() => {
       fetchUpcomingMatches();
+      dispatch(fetchNotifications());
       return () => {
         dispatch(resetMatches());
       };
@@ -137,6 +141,11 @@ const HomeScreen = () => {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <IconButton
+        icon="bell"
+        size={28}
+        onPress={() => navigation.navigate('Notifications')}
+      />
       {renderContent()}
       <FAB
         icon="plus"

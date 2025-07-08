@@ -36,6 +36,7 @@ import GroupsScreen from '../screens/main/GroupsScreen';
 import GroupDetailsScreen from '../screens/main/GroupDetailsScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
 import GroupJoinRequestsScreen from "screens/main/GroupJoinRequestScreen";
+import NotificationsScreen from '../screens/main/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -316,6 +317,20 @@ const Navigation = () => {
                 options={{
                   headerShown: true,
                   title: "Demande d'adhésion",
+                  headerLeft: () => (
+                    <IconButton
+                      icon="arrow-left"
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                }}
+              />
+              <Stack.Screen
+                name="Notifications"
+                component={NotificationsScreen}
+                options={{
+                  headerShown: true,
+                  title: "Notifications",
                   headerLeft: () => (
                     <IconButton
                       icon="arrow-left"
