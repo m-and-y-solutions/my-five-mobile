@@ -147,12 +147,20 @@ const GroupsScreen = () => {
             filteredGroups.map((group) => (
               <TouchableOpacity
                 key={group.id}
-                style={styles.groupContainer}
+                style={[styles.groupContainer, !group.isMember && { opacity: 0.5 }]}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('GroupDetails', { groupId: group.id })}
+                onPress={() => {
+                  if (group.isMember) {
+                    navigation.navigate('GroupDetails', { groupId: group.id });
+                  }
+                }}
+                disabled={!group.isMember}
               >
                 <View style={styles.groupInfo}>
                   <Text style={styles.groupName}>{group.name}</Text>
+                  {!group.isMember && (
+                    <Text style={styles.accessText}>Rejoignez le groupe pour accéder</Text>
+                  )}
                   <Text style={styles.groupDescription}>{group.description}</Text>
                   {group.creatorId === userId && (
                     <Text
@@ -163,11 +171,6 @@ const GroupsScreen = () => {
                     </Text>
                   )}
                 </View>
-                {!group.isMember && (
-                  <Text style={{ color: '#bdbdbd', fontSize: 12, marginTop: 4 }}>
-                    Rejoignez le groupe pour accéder
-                  </Text>
-                )}
                 {group.isMember ? (
                   <IconButton
                     icon="exit-to-app"
@@ -189,13 +192,16 @@ const GroupsScreen = () => {
                     <Text style={{ color: '#bdbdbd', fontSize: 12 }}>Bloqué</Text>
                   </View>
                 ) : (
-                  <IconButton
-                    icon="account-plus"
-                    size={28}
-                    iconColor="#4CAF50"
-                    onPress={() => handleJoin(group.id)}
-                    disabled={joining === group.id}
-                  />
+                  <View style={{ opacity: 1 }}>
+                    <IconButton
+                      icon="account-plus"
+                      size={28}
+                      iconColor="#4CAF50"
+                      onPress={() => handleJoin(group.id)}
+                      disabled={joining === group.id}
+                      style={{ backgroundColor: '#fff', borderRadius: 50, elevation: 2 }}
+                    />
+                  </View>
                 )}
               </TouchableOpacity>
             ))
@@ -261,6 +267,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 2,
     color: '#222',
+  },
+  accessText: {
+    color: '#bdbdbd',
+    fontSize: 13,
+    marginBottom: 2,
+    marginTop: 2,
   },
   groupDescription: {
     fontSize: 14,
