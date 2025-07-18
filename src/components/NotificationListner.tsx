@@ -13,12 +13,15 @@ const NotificationListener = () => {
     if (!userId) return;
     const socket = io(config.serverUrl);
     socket.emit('register', userId);
+    console.log('[Socket] Listener attached for user', userId);
     socket.on('notification', (notif) => {
+      console.log('[Socket] Notification received:', notif);
       dispatch(addNotification(notif));
     });
     return () => {
       socket.off('notification');
       socket.disconnect();
+      console.log('[Socket] Listener detached and socket disconnected for user', userId);
     };
   }, [userId, dispatch]);
 

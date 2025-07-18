@@ -1,8 +1,8 @@
 const config = {
   // apiUrl: 'https://my-five-server.onrender.com/api',
   // serverUrl: 'https://my-five-server.onrender.com',
-   apiUrl: 'http://192.168.1.16:3000/api',
-  serverUrl: 'http://192.168.1.16:3000',
+   apiUrl: 'http://192.168.1.11:3001/api',
+  serverUrl: 'http://192.168.1.11:3001',
 };
 
 export default config;
