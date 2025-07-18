@@ -1,15 +1,20 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, ActivityIndicator, IconButton, Button, useTheme, List, Badge } from 'react-native-paper';
+import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image } from 'react-native';
+import { Text, ActivityIndicator, IconButton, Button, useTheme, List, Badge, Avatar } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchNotifications, markAsRead, markAllAsRead } from '../../store/slices/notificationSlice';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../types/navigation.types';
+import config from 'config/config';
 
 const NotificationsScreen = () => {
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const { notifications, loading, error } = useSelector((state: RootState) => state.notifications);
   const [refreshing, setRefreshing] = React.useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     dispatch(fetchNotifications());
@@ -32,20 +37,45 @@ const NotificationsScreen = () => {
   };
 
   const renderItem = ({ item }: any) => (
-    <List.Item
-      title={item.title}
-      description={item.body}
-      left={props => (
-        <IconButton
-          {...props}
-          icon={item.read ? 'bell-outline' : 'bell'}
-          iconColor={item.read ? '#bdbdbd' : '#4CAF50'}
-        />
-      )}
-      right={props => (
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => {
+        if (!item.read) handleMarkAsRead(item.id);
+        navigation.navigate('MatchDetails', { matchId: item.matchId });
+      }}
+      style={[styles.item, item.read && styles.itemRead, { padding: 12 }]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile', { userId: item.creatorId })}>
+          {/* <Image
+            source={item.user.creatorAvatar ? { uri: item.creatorAvatar.startsWith('http') ? item.creatorAvatar : `${process.env.EXPO_PUBLIC_SERVER_URL || ''}${item.creatorAvatar}` } : require('../../../assets/default-avatar.png')}
+            style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10, backgroundColor: '#eee' }}
+          /> */}
+          <Avatar.Image
+          size={40}
+          source={
+              item.user.profileImage
+                ? { uri: config.serverUrl + item.user.profileImage }
+                : require('../../../assets/default-avatar.png')
+            }
+            style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10, backgroundColor: '#eee' }}
+          />
+        </TouchableOpacity>
+        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile', { userId: item.creatorId })}>
+            <Text style={{ fontWeight: 'bold', color: '#4CAF50' }}>{`${item.user.firstName} ${item.user.lastName}` || 'Utilisateur'}</Text>
+          </TouchableOpacity>
+          <Text> a créé un match  </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('MatchDetails', { matchId: item.matchId })}>
+            <Text style={{ fontWeight: 'bold', color: '#1976D2' }}>{`${item.match.title}` || 'Match'}</Text>
+          </TouchableOpacity>
+          <Text> dans le groupe </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('GroupDetails', { groupId: item.groupId })}>
+            <Text style={{ fontWeight: 'bold', color: '#FF9800' }}>{`${item.group.name}` || 'Groupe'}</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
           {!item.read && <Badge style={styles.badge} size={10} />}
-          <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
           {!item.read && (
             <IconButton
               icon="check-circle-outline"
@@ -56,10 +86,9 @@ const NotificationsScreen = () => {
             />
           )}
         </View>
-      )}
-      style={[styles.item, item.read && styles.itemRead]}
-      onPress={() => handleMarkAsRead(item.id)}
-    />
+      </View>
+      <Text style={[styles.date, { marginLeft: 50, marginTop: 2 }]}>{item.createdAt ? (new Date(item.createdAt).toLocaleDateString() + ' ' + new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : ''}</Text>
+    </TouchableOpacity>
   );
 
   return (
