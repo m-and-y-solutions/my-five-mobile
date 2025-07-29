@@ -28,7 +28,6 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [birthDate, setBirthDate] = useState(new Date());
   const [address, setAddress] = useState('');
-  const [commune, setCommune] = useState('');
   const [telephone, setTelephone] = useState('');
   const [profileImage, setprofileImage] = useState<File | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -40,7 +39,9 @@ const RegisterScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading: authLoading, error: authError } = useSelector((state: RootState) => state.auth);
   const theme = useTheme();
-  const [country, setCountry] = useState('Belgique');
+  // Correction de l'initialisation du pays et de la commune
+  const [country, setCountry] = useState(COUNTRIES[0].value); // 'Belgique' par défaut
+  const [commune, setCommune] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRefs: Record<string, RefObject<any>> = {
@@ -67,7 +68,7 @@ const RegisterScreen = () => {
     if (!email) errors.email = "L'email est requis";
     if (!birthDate) errors.birthDate = 'La date de naissance est requise';
     if (!commune) errors.commune = 'La commune/ville est requise';
-    if (!address) errors.address = "L'adresse est requise";
+    // if (!address) errors.address = "L'adresse est requise"; // Adresse devient optionnelle
     if (!telephone) errors.telephone = 'Le téléphone est requis';
     if (!password) errors.password = 'Le mot de passe est requis';
     if (!confirmPassword) errors.confirmPassword = 'La confirmation du mot de passe est requise';
@@ -161,25 +162,6 @@ const RegisterScreen = () => {
 
             <ImagePicker onImageSelected={handleImageSelected} />
          {/* Inputs avec nouveau style */}
-            <View style={[styles.pickerContainer, { borderColor: '#4CAF50' }]}>
-              <View style={styles.pickerIcon}>
-                <MaterialCommunityIcons name="flag" size={20} color="#4CAF50" />
-              </View>
-              <Picker
-                selectedValue={country}
-                onValueChange={(itemValue) => {
-                  setCountry(itemValue);
-                  setCommune('');
-                }}
-                style={styles.picker}
-                dropdownIconColor="#4CAF50"
-              >
-                {COUNTRIES.map((c) => (
-                  <Picker.Item key={c.value} label={c.label} value={c.value} />
-                ))}
-              </Picker>
-            </View>
-
             <TextInput
               label={<Text>Prénom <Text style={{color: 'red'}}>*</Text></Text>}
               value={firstName}
@@ -249,25 +231,58 @@ const RegisterScreen = () => {
 
             <View style={[styles.pickerContainer, { borderColor: '#4CAF50' }]}>
               <View style={styles.pickerIcon}>
+                <MaterialCommunityIcons name="flag" size={20} color="#4CAF50" />
+              </View>
+              <Picker
+                selectedValue={country}
+                onValueChange={(itemValue) => {
+                  setCountry(itemValue);
+                  setCommune(''); // Réinitialise la commune quand on change de pays
+                }}
+                style={styles.picker}
+                dropdownIconColor="#4CAF50"
+              >
+                {COUNTRIES.map((c) => (
+                  <Picker.Item 
+                  key={c.value} 
+                  label={c.label} 
+                  value={c.value}
+                  color={'#000000' } 
+                  />
+                ))}
+              </Picker>
+            </View>
+
+            <View style={[styles.pickerContainer, { borderColor: '#4CAF50' }]}>
+              <View style={styles.pickerIcon}>
                 <MaterialCommunityIcons name="map-marker" size={20} color="#4CAF50" />
               </View>
               <Picker
-                selectedValue={commune}
+                selectedValue={commune || ""}
                 onValueChange={(itemValue) => setCommune(itemValue)}
-                style={styles.picker}
+                style={[styles.picker, { color: commune ? '#000000' : '#666666' }]}
                 dropdownIconColor="#4CAF50"
                 ref={inputRefs.commune}
               >
-                <Picker.Item label={country === 'Belgique' ? 'Sélectionnez votre commune' : 'Sélectionnez votre ville'} value="" />
-                {COMMUNES_BY_COUNTRY[country].map((commune) => (
-                  <Picker.Item key={commune} label={commune} value={commune} />
+                <Picker.Item 
+                  label={country === 'Belgique' ? 'Sélectionnez votre commune' : 'Sélectionnez votre ville'} 
+                  value="" 
+                  color="#666666"
+                />
+                {COMMUNES_BY_COUNTRY[country]?.map((commune) => (
+                  <Picker.Item 
+                    key={commune} 
+                    label={commune} 
+                    value={commune} 
+                    color={'#000000'} 
+                  />
                 ))}
               </Picker>
             </View>
             {fieldErrors.commune && <HelperText type="error" visible={true}>{fieldErrors.commune}</HelperText>}
 
             <TextInput
-              label={<Text>Adresse <Text style={{color: 'red'}}>*</Text></Text>}
+              label={<Text>Adresse</Text>} // Retirer l'astérisque
               value={address}
               onChangeText={setAddress}
               mode="outlined"
@@ -277,7 +292,7 @@ const RegisterScreen = () => {
               ref={inputRefs.address}
               error={!!fieldErrors.address}
             />
-            {fieldErrors.address && <HelperText type="error" visible={true}>{fieldErrors.address}</HelperText>}
+            {/* {fieldErrors.address && <HelperText type="error" visible={true}>{fieldErrors.address}</HelperText>} */}
 
             <TextInput
               label={<Text>Téléphone <Text style={{color: 'red'}}>*</Text></Text>}
@@ -470,6 +485,8 @@ const styles = StyleSheet.create({
   picker: {
     flex: 1,
     height: '100%',
+    color: '#000000',
+    fontSize: 16,
   },
   buttonLabel: {
     fontWeight: 'bold',

@@ -25,7 +25,7 @@ const ImagePickerComponent: React.FC<ImagePickerProps> = ({ onImageSelected, ini
       if (status !== 'granted') {
         Alert.alert(
           'Permission requise',
-          'Nous avons besoin de votre permission pour accéder à vos photos.'
+          'Nous avons besoin d’accéder à votre photothèque pour vous permettre de sélectionner une image de profil que vous pouvez utiliser dans votre compte utilisateur.'
         );
       }
     })();
