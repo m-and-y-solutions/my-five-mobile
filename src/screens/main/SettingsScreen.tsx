@@ -228,9 +228,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 15,
   },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+  },
+  value: {
+    fontSize: 16,
+    color: '#666',
+    paddingHorizontal: 8,
+  },
   sectionTitle: {
-    marginBottom: 10,
-    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
   deleteButton: {
     borderColor: 'red',

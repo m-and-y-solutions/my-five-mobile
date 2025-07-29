@@ -270,6 +270,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     color: '#333',
+    fontSize: 16,
+    paddingHorizontal: 12,
   },
   tabs: {
     flexDirection: 'row',
@@ -292,6 +294,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#666',
     marginVertical: 16,
+    fontSize: 16,
+    paddingHorizontal: 8,
   },
   errorText: {
     color: 'red',
@@ -351,6 +355,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    paddingHorizontal: 8,
   },
 });
 

@@ -139,10 +139,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 30,
     color: '#4CAF50',
+    fontSize: 22, // titre bien visible
   },
   input: {
     marginBottom: 16,
     backgroundColor: '#fff',
+    fontSize: 16, // police minimum 16
+    paddingHorizontal: 12, // padding horizontal pour éviter le texte collé aux bords
   },
   button: {
     marginTop: 8,

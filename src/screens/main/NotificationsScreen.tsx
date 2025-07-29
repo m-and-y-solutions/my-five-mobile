@@ -174,6 +174,22 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontSize: 16,
   },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+  },
+  notificationBody: {
+    fontSize: 16,
+    color: '#666',
+    paddingHorizontal: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
 });
 
 export default NotificationsScreen; 

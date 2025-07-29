@@ -1583,6 +1583,7 @@ const styles = StyleSheet.create({
   participantName: {
     fontSize: 16,
     fontWeight: "500",
+    paddingHorizontal: 8,
   },
   participantMeta: {
     flexDirection: "row",
@@ -1600,8 +1601,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   captainText: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#FFD700",
+    paddingHorizontal: 8,
   },
   statsBadge: {
     flexDirection: "row",
@@ -1613,8 +1615,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statsText: {
-    fontSize: 12,
+    fontSize: 16,
     color: "#FFF",
+    paddingHorizontal: 8,
   },
   playerActions: {
     flexDirection: "row",
@@ -1647,10 +1650,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
     fontSize: 16,
+    paddingHorizontal: 8,
   },
   scoreText: {
     fontWeight: "bold",
     fontSize: 48,
+    paddingHorizontal: 8,
   },
   scoreTouchable: {
     padding: 8,
@@ -1667,8 +1672,9 @@ const styles = StyleSheet.create({
   },
   editHint: {
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 8,
+    paddingHorizontal: 8,
   },
   infoSection: {
     padding: 16,
@@ -1685,11 +1691,13 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 16,
+    paddingHorizontal: 8,
   },
   errorText: {
     fontSize: 18,
     textAlign: "center",
     marginBottom: 16,
+    paddingHorizontal: 8,
   },
   retryButton: {
     borderRadius: 8,
@@ -1770,8 +1778,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTeamText: {
-    fontSize: 14,
+    fontSize: 16,
     textAlign: "center",
+    paddingHorizontal: 8,
   },
 });
 

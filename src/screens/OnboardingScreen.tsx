@@ -126,18 +126,25 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
     textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
-  description: {
+  subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    paddingHorizontal: 20,
-    lineHeight: 24,
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   pagination: {
     flexDirection: 'row',

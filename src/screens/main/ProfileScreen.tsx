@@ -312,9 +312,13 @@ const styles = (theme: MD3Theme) => StyleSheet.create({
   name: {
     fontWeight: "bold",
     color: theme.colors.onSurface, 
+    fontSize: 18,
+    paddingHorizontal: 8,
   },
   email: {
     color: theme.colors.onSurface, 
+    fontSize: 16,
+    paddingHorizontal: 8,
   },
   statsContainer: {
     flexDirection: "row",
@@ -328,9 +332,11 @@ const styles = (theme: MD3Theme) => StyleSheet.create({
   statValue: {
     fontWeight: "bold",
     color: theme.colors.onSurface, 
+    fontSize: 16,
   },
   statLabel: {
     color: theme.colors.onSurface, 
+    fontSize: 16,
   },
   section: {
     backgroundColor: theme.colors.surface, 
@@ -344,6 +350,8 @@ const styles = (theme: MD3Theme) => StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 12,
     color: theme.colors.onSurface, 
+    fontSize: 16,
+    paddingHorizontal: 8,
   },
   logoutButton: {
     marginTop: 20,

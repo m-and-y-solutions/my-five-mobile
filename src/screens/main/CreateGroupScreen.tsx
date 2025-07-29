@@ -146,6 +146,8 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
     backgroundColor: '#f5f5f5',
+    fontSize: 16, // police minimum 16
+    paddingHorizontal: 12, // padding horizontal pour éviter le texte collé aux bords
   },
   label: {
     fontWeight: 'bold',
