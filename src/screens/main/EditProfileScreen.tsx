@@ -47,7 +47,7 @@ const EditProfileScreen = () => {
     if (!firstName) errors.firstName = 'Le prénom est requis';
     if (!lastName) errors.lastName = 'Le nom est requis';
     if (!birthDate) errors.birthDate = 'La date de naissance est requise';
-    if (!address) errors.address = "L'adresse est requise";
+    // if (!address) errors.address = "L'adresse est requise";
     if ((newPassword || confirmNewPassword) && newPassword !== confirmNewPassword) errors.confirmNewPassword = 'Les nouveaux mots de passe ne correspondent pas';
     setFieldErrors(errors);
     return errors;
@@ -159,7 +159,7 @@ const EditProfileScreen = () => {
           />
         )}
         <TextInput
-          label={<Text>Adresse <Text style={{color: 'red'}}>*</Text></Text>}
+          label={<Text>Adresse</Text>}
           value={address}
           onChangeText={setAddress}
           mode="outlined"
@@ -168,7 +168,7 @@ const EditProfileScreen = () => {
           ref={inputRefs.address}
           error={!!fieldErrors.address}
         />
-        {fieldErrors.address && <HelperText type="error" visible={true}>{fieldErrors.address}</HelperText>}
+        {/* {fieldErrors.address && <HelperText type="error" visible={true}>{fieldErrors.address}</HelperText>} */}
         <TextInput
           label="Nouveau mot de passe (optionnel)"
           value={newPassword}
