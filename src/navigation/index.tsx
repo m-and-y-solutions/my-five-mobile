@@ -13,6 +13,7 @@ import { IconButton } from "react-native-paper";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { restoreAuth, setOnboardingSeen } from "../store/slices/authSlice";
+import NotificationBellWithBadge from 'components/NotificationBellWithBadge';
 
 // Auth Screens
 import LoginScreen from "../screens/auth/LoginScreen";
@@ -37,6 +38,7 @@ import GroupDetailsScreen from '../screens/main/GroupDetailsScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
 import GroupJoinRequestsScreen from "screens/main/GroupJoinRequestScreen";
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import NotificationListener from "components/NotificationListner";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -118,13 +120,6 @@ const MainTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        // todo restore after implementing settings
-        // headerRight: () => (
-        //   <IconButton
-        //     icon="menu"
-        //     onPress={() => navigation.navigate("Settings")}
-        //   />
-        // ),
         tabBarActiveTintColor: "#4CAF50",
         tabBarInactiveTintColor: "#666",
         tabBarStyle: {
@@ -133,6 +128,7 @@ const MainTabs = () => {
           paddingBottom: 5,
           paddingTop: 5,
         },
+        headerRight: () => <NotificationBellWithBadge />,
       }}
     >
       <Tab.Screen
@@ -218,141 +214,152 @@ const Navigation = () => {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {accessToken ? (
-        <>
-          {!hasSeenOnboarding ? (
-          // {true ? (
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          ) : (
-            <>
-              <Stack.Screen name="Main" component={MainTabs} />
-              <Stack.Screen
-                name="Settings"
-                component={SettingsScreen}
-                options={{
-                  headerShown: true,
-                  title: "Paramètres",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="CreateMatch"
-                component={CreateMatchScreen}
-                options={{
-                  headerShown: true,
-                  title: "Créer un match",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="MatchDetails"
-                component={MatchDetailsScreen}
-                options={{
-                  headerShown: true,
-                  title: "Détails du match",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{
-                  headerShown: true,
-                  title: "Profil",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="CreateGroup"
-                component={require('../screens/main/CreateGroupScreen').default}
-                options={{
-                  headerShown: true,
-                  title: "Créer un groupe",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="GroupDetails"
-                component={GroupDetailsScreen}
-                options={{
-                  headerShown: true,
-                  title: "Détails du groupe",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
+    <>
+      <NotificationListener />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {accessToken ? (
+          <>
+            {!hasSeenOnboarding ? (
+            // {true ? (
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            ) : (
+              <>
+                <Stack.Screen name="Main" component={MainTabs} />
                 <Stack.Screen
-                name="GroupJoinRequests"
-                component={GroupJoinRequestsScreen}
-                options={{
-                  headerShown: true,
-                  title: "Demande d'adhésion",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="Notifications"
-                component={NotificationsScreen}
-                options={{
-                  headerShown: true,
-                  title: "Notifications",
-                  headerLeft: () => (
-                    <IconButton
-                      icon="arrow-left"
-                      onPress={() => navigation.goBack()}
-                    />
-                  ),
-                }}
-              />
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
-          <Stack.Screen name="VerifyCodeReset" component={VerifyCodeResetScreen} />
-        </>
-      )}
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-    </Stack.Navigator>
+                  name="Settings"
+                  component={SettingsScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Paramètres",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                <Stack.Screen
+                  name="CreateMatch"
+                  component={CreateMatchScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Créer un match",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                <Stack.Screen
+                  name="MatchDetails"
+                  component={MatchDetailsScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Détails du match",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                <Stack.Screen
+                  name="Profile"
+                  component={ProfileScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Profil",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                <Stack.Screen
+                  name="CreateGroup"
+                  component={require('../screens/main/CreateGroupScreen').default}
+                  options={{
+                    headerShown: true,
+                    title: "Créer un groupe",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                <Stack.Screen
+                  name="GroupDetails"
+                  component={GroupDetailsScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Détails du groupe",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                  <Stack.Screen
+                  name="GroupJoinRequests"
+                  component={GroupJoinRequestsScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Demande d'adhésion",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+                <Stack.Screen
+                  name="Notifications"
+                  component={NotificationsScreen}
+                  options={{
+                    headerShown: true,
+                    title: "Notifications",
+                    headerLeft: () => (
+                      <IconButton
+                        icon="arrow-left"
+                        onPress={() => navigation.goBack()}
+                      />
+                    ),
+                    headerRight: () => <NotificationBellWithBadge />,
+                  }}
+                />
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+            <Stack.Screen name="VerifyCodeReset" component={VerifyCodeResetScreen} />
+          </>
+        )}
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      </Stack.Navigator>
+    </>
   );
 };
 

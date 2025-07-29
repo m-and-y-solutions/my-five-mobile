@@ -5,6 +5,7 @@ import { CommonActions } from '@react-navigation/native';
 import { LoginCredentials, RegisterData } from '../../types/auth.types';
 import api from 'services/api';
 import config from 'config/config';
+import { registerForPushNotificationsAsync } from 'utils/notifications';
 
 export const restoreAuth = createAsyncThunk(
   'auth/restore',
@@ -15,7 +16,7 @@ export const restoreAuth = createAsyncThunk(
         AsyncStorage.getItem('refreshToken'),
         AsyncStorage.getItem('user')
       ]);
-      
+
       if (accessToken && refreshToken && userStr) {
         const user = JSON.parse(userStr);
         return { accessToken, refreshToken, user };
@@ -52,6 +53,10 @@ export const login = createAsyncThunk(
     if (response.success && response.data?.accessToken && response.data?.refreshToken) {
       if (response.data.user) {
         await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        //  const token = await registerForPushNotificationsAsync();
+        // if (token) {
+        //   await api.post('/users/push-token', { token });
+        // }
       }
     } else {
       console.error('Login response missing tokens:', response);
@@ -322,13 +327,13 @@ const authSlice = createSlice({
         //   refreshToken: state.refreshToken ? 'Present' : 'Missing',
         //   user: state.user ? 'Present' : 'Missing'
         // });
-        
+
         state.accessToken = null;
         state.refreshToken = null;
         state.user = null;
         state.error = null;
         // state.hasSeenOnboarding = false; // Remettre à false lors du logout
-        
+
         // console.log('🧹 Auth Store - After logout:', {
         //   accessToken: state.accessToken ? 'Present' : 'Missing',
         //   refreshToken: state.refreshToken ? 'Present' : 'Missing',
@@ -342,8 +347,8 @@ const authSlice = createSlice({
       .addCase(updateProfil.fulfilled, (state, action) => {
         state.loading = false;
         // Met à jour selectedUser si c'est le user affiché
-          state.user = action.payload;
-        
+        state.user = action.payload;
+
       })
       .addCase(updateProfil.rejected, (state, action) => {
         state.loading = false;
