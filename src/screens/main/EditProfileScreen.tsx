@@ -47,7 +47,7 @@ const EditProfileScreen = () => {
     if (!firstName) errors.firstName = 'Le prénom est requis';
     if (!lastName) errors.lastName = 'Le nom est requis';
     if (!birthDate) errors.birthDate = 'La date de naissance est requise';
-    // if (!address) errors.address = "L'adresse est requise";
+    // if (!address) errors.address = "L'adresse est requise"; // Adresse devient optionnelle
     if ((newPassword || confirmNewPassword) && newPassword !== confirmNewPassword) errors.confirmNewPassword = 'Les nouveaux mots de passe ne correspondent pas';
     setFieldErrors(errors);
     return errors;
@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
     backgroundColor: '#fff',
+    fontSize: 16, // police minimum 16
+    paddingHorizontal: 12, // padding horizontal pour éviter le texte collé aux bords
   },
   saveButton: {
     marginTop: 10,
@@ -254,6 +256,11 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 16,
+  },
+  helperText: {
+    fontSize: 14, // helper text un peu plus grand
+    marginTop: -8,
+    marginBottom: 16,
   },
 });
 

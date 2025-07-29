@@ -233,13 +233,18 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
+    paddingHorizontal: 8,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
+    paddingHorizontal: 8,
   },
   matchInfo: {
     marginTop: 8,
+    fontSize: 16,
+    color: '#333',
+    paddingHorizontal: 8,
   },
   teamsContainer: {
     flexDirection: 'row',

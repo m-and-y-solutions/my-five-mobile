@@ -725,7 +725,9 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#fff',
-    fontSize: 16,
+    fontSize: 16, // police minimum 16
+    paddingHorizontal: 12, // padding horizontal pour éviter le texte collé aux bords
+    marginBottom: 8,
   },
   modalContainer: {
     flex: 1,

@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 16,
+    paddingHorizontal: 20,
   },
   searchBar: {
     marginBottom: 16,
@@ -239,6 +240,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     color: '#333',
+    fontSize: 16,
+    paddingHorizontal: 12,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -267,6 +270,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 2,
     color: '#222',
+    paddingHorizontal: 8,
   },
   accessText: {
     color: '#bdbdbd',
@@ -275,8 +279,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   groupDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
+    paddingHorizontal: 8,
   },
   empty: {
     textAlign: 'center',

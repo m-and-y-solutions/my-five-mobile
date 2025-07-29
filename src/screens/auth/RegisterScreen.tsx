@@ -419,6 +419,8 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
     backgroundColor: '#fff',
+    fontSize: 16, // police minimum 16
+    paddingHorizontal: 12, // padding horizontal pour éviter le texte collé aux bords
   },
   button: {
     marginTop: 10,
@@ -449,7 +451,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   helperText: {
-    fontSize: 12,
+    fontSize: 14, // helper text un peu plus grand
     marginTop: -8,
     marginBottom: 16,
   },
@@ -487,6 +489,7 @@ const styles = StyleSheet.create({
     height: '100%',
     color: '#000000',
     fontSize: 16,
+    paddingHorizontal: 8,
   },
   buttonLabel: {
     fontWeight: 'bold',

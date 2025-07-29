@@ -507,12 +507,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    paddingHorizontal: 8,
   },
   statLabel: {
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 16,
+    paddingHorizontal: 8,
   },
   chartContainer: {
     marginTop: 16,
@@ -585,6 +586,12 @@ const styles = StyleSheet.create({
   },
   buttonContent: {
     height: 44,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
 });
 
