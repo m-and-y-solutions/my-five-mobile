@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image } f
 import { Text, ActivityIndicator, IconButton, Button, useTheme, List, Badge, Avatar } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchNotifications, markAsRead, markAllAsRead } from '../../store/slices/notificationSlice';
+import { fetchNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../store/slices/notificationSlice';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../types/navigation.types';
@@ -27,12 +27,12 @@ const NotificationsScreen = () => {
   };
 
   const handleMarkAsRead = (id: string) => {
-    dispatch(markAsRead(id));
+    dispatch(markNotificationAsRead(id));
     // TODO: Optionnel: call API to mark as read
   };
 
   const handleMarkAllAsRead = () => {
-    dispatch(markAllAsRead());
+    dispatch(markAllNotificationsAsRead());
     // TODO: Optionnel: call API to mark all as read
   };
 

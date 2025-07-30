@@ -6,12 +6,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation.types';
 import { RootState } from '../store';
+import { selectUnreadCount } from '../store/slices/notificationSlice';
 
 const NotificationBellWithBadge = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const unreadCount = useSelector(
-    (state: RootState) => state.notifications.notifications.filter(n => !n.read).length
-  );
+  const unreadCount = useSelector(selectUnreadCount);
 
   return (
     <View>
