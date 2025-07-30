@@ -53,10 +53,10 @@ export const login = createAsyncThunk(
     if (response.success && response.data?.accessToken && response.data?.refreshToken) {
       if (response.data.user) {
         await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-        //  const token = await registerForPushNotificationsAsync();
-        // if (token) {
-        //   await api.post('/users/push-token', { token });
-        // }
+         const token = await registerForPushNotificationsAsync();
+        if (token) {
+          await api.post('/users/push-token', { token });
+        }
       }
     } else {
       console.error('Login response missing tokens:', response);
