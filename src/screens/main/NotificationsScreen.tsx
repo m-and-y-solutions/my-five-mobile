@@ -54,16 +54,16 @@ const NotificationsScreen = () => {
           <Avatar.Image
           size={40}
           source={
-              item.user.profileImage
-                ? { uri: config.serverUrl + item.user.profileImage }
+              item.match.creator.profileImage
+                ? { uri: config.serverUrl + item.match.creator.profileImage }
                 : require('../../../assets/default-avatar.png')
             }
             style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10, backgroundColor: '#eee' }}
           />
         </TouchableOpacity>
         <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile', { userId: item.creatorId })}>
-            <Text style={{ fontWeight: 'bold', color: '#4CAF50' }}>{`${item.user.firstName} ${item.user.lastName}` || 'Utilisateur'}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile', { userId: item.match.creator.id })}>
+            <Text style={{ fontWeight: 'bold', color: '#4CAF50' }}>{`${item.match.creator.firstName} ${item.match.creator.lastName}` || 'Utilisateur'}</Text>
           </TouchableOpacity>
           <Text> a créé un match  </Text>
           <TouchableOpacity onPress={() => navigation.navigate('MatchDetails', { matchId: item.matchId })}>
