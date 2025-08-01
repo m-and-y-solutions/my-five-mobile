@@ -1,19 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Provider } from "react-redux";
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 import Navigation from './src/navigation';
-import { RootState, store } from './src/store';
+import { store } from './src/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LogBox, View, Text } from 'react-native';
+import { LogBox, View, Text, Platform, AppState } from 'react-native';
 import { LightTheme } from './src/theme';
-import { io } from 'socket.io-client';
-import { useSelector, useDispatch } from 'react-redux';
-import { addNotification } from 'store/slices/notificationSlice';
-import config from 'config/config';
 import * as Notifications from 'expo-notifications';
-import { registerForPushNotificationsAsync } from './src/utils/notifications';
 import api from './src/services/api';
 
 // Ignore specific warnings
@@ -22,28 +17,18 @@ LogBox.ignoreLogs([
   'ColorPropType will be removed',
 ]);
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  state = { hasError: false, error: null as Error | null };
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-// Error boundary component
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false, error: null };
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('App Error:', error, errorInfo);
   }
 
-  render(): React.ReactNode {
+  render() {
     if (this.state.hasError) {
       return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -57,7 +42,9 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export default function App() {
-  // Configurer les notifications
+  const appState = useRef(AppState.currentState);
+
+  // Configure notifications handler
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -68,43 +55,99 @@ export default function App() {
     }),
   });
 
-  // Demander les permissions
-  const requestPermissions = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission refusée pour les notifications');
+  // Setup Android notification channel
+  const setupAndroidChannel = async () => {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
     }
   };
 
-  React.useEffect(() => {
-    const initializeNotifications = async () => {
-      await requestPermissions();
-      
-      // Enregistrer le token push
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        try {
-          await api.post('/users/push-token', { token });
-          console.log('[App] Push token enregistré:', token);
-        } catch (error) {
-          console.error('[App] Erreur lors de l\'enregistrement du token:', error);
-        }
-      }
-    };
-    
-    initializeNotifications();
-  }, []);
+  // Register push token with backend
+  const registerPushToken = async (token: string) => {
+    try {
+      await api.post('/users/push-token', { token });
+      await AsyncStorage.setItem('pushToken', token);
+      console.log('Push token registered successfully');
+    } catch (error) {
+      console.error('Failed to register push token:', error);
+    }
+  };
 
-  React.useEffect(() => {
-    const testAsyncStorage = async () => {
-      try {
-        await AsyncStorage.setItem('test', 'test');
-        const value = await AsyncStorage.getItem('test');
-      } catch (error) {
-        console.error('❌ AsyncStorage error:', error);
+  // Full notification setup
+  const setupNotifications = async () => {
+    try {
+      await setupAndroidChannel();
+      
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
       }
+      
+      if (finalStatus !== 'granted') {
+        console.warn('Notification permission denied');
+        return;
+      }
+
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      console.log('Expo Push Token:', token);
+      
+      const savedToken = await AsyncStorage.getItem('pushToken');
+      if (token !== savedToken) {
+        await registerPushToken(token);
+      }
+
+      // Check if app was opened from notification
+      const initialNotification = await Notifications.getLastNotificationResponseAsync();
+      if (initialNotification) {
+        console.log('App opened from notification:', initialNotification);
+      }
+
+    } catch (error) {
+      console.error('Notification setup failed:', error);
+    }
+  };
+
+  // Set up notification listeners
+  useEffect(() => {
+    setupNotifications();
+
+    // Foreground notification listener
+    const notificationSubscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+    });
+
+    // Notification response listener
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification tapped:', response);
+    });
+
+    // App state listener
+    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        Notifications.getLastNotificationResponseAsync()
+          .then(response => {
+            if (response) {
+              console.log('App brought to foreground by notification:', response);
+            }
+          });
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      notificationSubscription.remove();
+      responseSubscription.remove();
+      appStateSubscription.remove();
     };
-    testAsyncStorage();
   }, []);
 
   return (

@@ -24,10 +24,13 @@
     "date-fns-tz": "^3.2.0",
     "expo": "~53.0.9",
     "expo-dev-client": "^5.2.0",
+    "expo-device": "~7.1.4",
     "expo-image-picker": "~16.1.4",
+    "expo-notifications": "~0.31.4",
     "expo-status-bar": "~2.2.3",
+    "firebase": "^12.0.0",
     "react": "19.0.0",
-    "react-native": "0.79.3",
+    "react-native": "0.79.5",
     "react-native-chart-kit": "^6.12.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-image-picker": "^8.2.1",
@@ -41,9 +44,7 @@
     "react-native-svg": "15.11.2",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.2.0",
-    "socket.io-client": "^4.8.1",
-    "expo-notifications": "~0.31.4",
-    "expo-device": "~7.1.4"
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -23,6 +23,7 @@ import MatchCard from "../../components/MatchCard";
 import { LightTheme as theme } from "../../theme";
 import { RootStackParamList } from "types/navigation.types";
 import { fetchNotifications } from '../../store/slices/notificationSlice';
+import PushNotificationTest from '../../components/PushNotificationTest';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -141,6 +142,7 @@ const HomeScreen = () => {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <PushNotificationTest />
       {renderContent()}
       <FAB
         icon="plus"

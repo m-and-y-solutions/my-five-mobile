@@ -9,6 +9,13 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "notification": {
+      "icon": "./assets/my-five-icon-green.png",
+      "color": "#ffffff",
+      "iosDisplayInForeground": true,
+      "androidMode": "default",
+      "androidCollapsedTitle": "New Notification"
+    },
     "android": {
       "package": "com.mysolution.myfive",
       "googleServicesFile": "./google-services.json",
@@ -17,7 +24,20 @@
         "foregroundImage": "./assets/my-five-icon-green.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [],
+      "useNextNotificationsApi": true,
+      "config": {
+        "googleServices": {
+          "gcmSenderId": "117806687008"
+        }
+      },
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "RECEIVE_NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
       "allowBackup": true
     },
     "extra": {
@@ -34,7 +54,8 @@
     "owner": "my-five",
     "ios": {
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Nous avons besoin d’accéder à votre photothèque pour vous permettre de sélectionner une image de profil que vous pouvez utiliser dans votre compte utilisateur."
+        "NSPhotoLibraryUsageDescription": "Nous avons besoin d'accéder à votre photothèque pour vous permettre de sélectionner une image de profil que vous pouvez utiliser dans votre compte utilisateur.",
+        "UIBackgroundModes": ["remote-notification"]
       }
     }
   }
