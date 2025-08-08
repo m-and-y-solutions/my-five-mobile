@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { Text, TextInput, Button, IconButton, List, Chip } from 'react-native-paper';
+import { Text, TextInput, Button, IconButton, List, Chip, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -54,6 +54,7 @@ const CreateMatchScreen = () => {
   const communesOrCities = userCountry === 'Belgique' ? COMMUNES_BY_COUNTRY.Belgique : COMMUNES_BY_COUNTRY.Tunisie;
   const cityLabel = userCountry === 'Belgique' ? 'Commune' : 'Ville';
   const [showMaxPlayersModal, setShowMaxPlayersModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false); // État pour le loading du bouton
 
   const isFieldAvailable = (field: Field) => {
     if (!field.isAvailable) return false;
@@ -91,7 +92,6 @@ const CreateMatchScreen = () => {
     return !hasConflictingBooking;
   };
 
-
   useEffect(() => {
     const organizedFields: FieldsByCity = {};
     fields.forEach((field: Field) => {
@@ -116,11 +116,6 @@ const CreateMatchScreen = () => {
     const newErrors: { [key: string]: string } = {};
     const dayOfWeek = selectedDate.getDay();
     const hours = selectedDate.getHours();
-
-    console.log('=== Validation Time ===');
-    console.log('Original Date:', selectedDate.toString());
-    console.log('hours', hours);
-    console.log('dayOfWeek', dayOfWeek);
 
     let isValidTime = false;
     if (dayOfWeek === 0) { // Dimanche
@@ -147,7 +142,6 @@ const CreateMatchScreen = () => {
     const zonedDate = toZonedTime(selectedDate, timeZone);
 
     if (!validateTime(zonedDate)) {
-      // Si la validation échoue, on ne change pas la date
       setShowDatePicker(false);
       return;
     }
@@ -158,7 +152,6 @@ const CreateMatchScreen = () => {
     setTime(format(zonedDate, 'HH:mm'));
     setErrors(prev => ({ ...prev, date: '', time: '' }));
   };
-
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -198,6 +191,7 @@ const CreateMatchScreen = () => {
 
   const handleCreate = async () => {
     if (validateForm()) {
+      setIsCreating(true); // Activer le loading
       try {
         const selectedFieldData = fields.find(f => f.id === selectedField);
         const timeZone = 'Europe/Brussels';
@@ -221,6 +215,7 @@ const CreateMatchScreen = () => {
           country: userCountry,
           city: selectedCity?.name,
         }));
+
         if (matchVisibility === 'group') {
           dispatch(fetchGroups());
         }
@@ -228,9 +223,12 @@ const CreateMatchScreen = () => {
         navigation.goBack();
       } catch (error: any) {
         console.error('Error creating match:', error);
+      } finally {
+        setIsCreating(false); // Désactiver le loading dans tous les cas
       }
     }
   };
+
 
   const selectedFieldData = selectedCity ? fieldsByCity[selectedCity.id]?.find(field => field.id === selectedField) : null;
 
@@ -688,9 +686,15 @@ const CreateMatchScreen = () => {
                 style={styles.button}
                 contentStyle={styles.buttonContent}
                 labelStyle={styles.buttonLabel}
+                disabled={isCreating}
               >
-                Créer le match
+                {isCreating ? (
+                  <ActivityIndicator animating={true} color="#fff" />
+                ) : (
+                  'Créer le match'
+                )}
               </Button>
+
             </View>
           </View>
         </ScrollView>

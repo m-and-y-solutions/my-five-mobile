@@ -9,7 +9,6 @@ import { fetchGroups, joinGroup, leaveGroup, getGroupJoinRequests, respondToJoin
 import { Group } from '../../services/groupService';
 import { RootStackParamList } from 'types/navigation.types';
 
-
 type GroupsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'GroupDetails'>;
 type GroupsScreenRouteProp = RouteProp<RootStackParamList, 'Groups'>;
 
@@ -38,14 +37,11 @@ const GroupsScreen = () => {
     setRefreshing(false);
   };
 
-  // Filtrage dynamique
   const filteredGroups = (groups || []).filter((group: Group) => {
-    // Recherche
     const groupsSearch =
       group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (group.description || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Filtres
     const isCreator = group.creatorId === userId;
     const isMember = group.isMember;
 
@@ -53,13 +49,11 @@ const GroupsScreen = () => {
     if (activeFilters.includes('created')) groupsFilters = groupsFilters && isCreator;
     if (activeFilters.includes('member')) groupsFilters = groupsFilters && isMember;
 
-    // Filtre contextuel (depuis profil)
     if (isUserGroups && !isMember) return false;
 
     return groupsSearch && groupsFilters;
   });
 
-  // Actions
   const [joining, setJoining] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -81,7 +75,6 @@ const GroupsScreen = () => {
     dispatch(getGroupJoinRequests(groupId));
   };
 
-  // Rendu
   if (loading && !refreshing) {
     return <ActivityIndicator style={{ flex: 1 }} size="large" color="#4CAF50" />;
   }
@@ -145,65 +138,70 @@ const GroupsScreen = () => {
             <Text style={styles.empty}>Aucun groupe trouvé.</Text>
           ) : (
             filteredGroups.map((group) => (
-              <TouchableOpacity
-                key={group.id}
-                style={[styles.groupContainer, !group.isMember && { opacity: 0.5 }]}
-                activeOpacity={0.8}
-                onPress={() => {
-                  if (group.isMember) {
-                    navigation.navigate('GroupDetails', { groupId: group.id });
-                  }
-                }}
-                disabled={!group.isMember}
-              >
-                <View style={styles.groupInfo}>
-                  <Text style={styles.groupName}>{group.name}</Text>
-                  {!group.isMember && (
-                    <Text style={styles.accessText}>Rejoignez le groupe pour accéder</Text>
-                  )}
-                  <Text style={styles.groupDescription}>{group.description}</Text>
-                  {group.creatorId === userId && (
-                    <Text
-                      style={styles.joinRequestsLink}
-                      onPress={() => navigation.navigate('GroupJoinRequests', { groupId: group.id })}
-                    >
-                      Voir demandes d'adhésion
-                    </Text>
-                  )}
+              <View key={group.id} style={[styles.groupContainer, !group.isMember && styles.groupInactive]}>
+                <View style={[styles.groupContent, !group.isMember && styles.groupContentInactive]}>
+                  <TouchableOpacity
+                    style={styles.groupInfo}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (group.isMember) {
+                        navigation.navigate('GroupDetails', { groupId: group.id });
+                      }
+                    }}
+                    disabled={!group.isMember}
+                  >
+                    <Text style={styles.groupName}>{group.name}</Text>
+                    {!group.isMember && (
+                      <Text style={styles.accessText}>Rejoignez le groupe pour accéder</Text>
+                    )}
+                    <Text style={styles.groupDescription}>{group.description}</Text>
+                    {group.creatorId === userId && (
+                      <Text
+                        style={styles.joinRequestsLink}
+                        onPress={() => navigation.navigate('GroupJoinRequests', { groupId: group.id })}
+                      >
+                        Voir demandes d'adhésion
+                      </Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
-                {group.isMember ? (
-                  <IconButton
-                    icon="exit-to-app"
-                    size={28}
-                    iconColor="#e53935"
-                    onPress={() => handleLeave(group.id)}
-                    disabled={leaving === group.id || group.creatorId === userId}
-                  />
-                ) : group.joinRequestStatus === 'pending' ? (
-                  <Button disabled>En attente</Button>
-                ) : group.joinRequestStatus === 'blocked' ? (
-                  <View style={{ alignItems: 'center' }}>
+
+                {/* Séparateur vertical */}
+                <View style={styles.verticalSeparator} />
+
+                {/* Partie bouton (toujours blanche) */}
+                <View style={styles.buttonContainer}>
+                  {group.isMember ? (
                     <IconButton
-                      icon="minus-circle-outline"
+                      icon="exit-to-app"
                       size={28}
-                      iconColor="#bdbdbd"
-                      disabled
+                      iconColor="#e53935"
+                      onPress={() => handleLeave(group.id)}
+                      disabled={leaving === group.id || group.creatorId === userId}
                     />
-                    <Text style={{ color: '#bdbdbd', fontSize: 12 }}>Bloqué</Text>
-                  </View>
-                ) : (
-                  <View style={{ opacity: 1 }}>
+                  ) : group.joinRequestStatus === 'pending' ? (
+                    <Button disabled>En attente</Button>
+                  ) : group.joinRequestStatus === 'blocked' ? (
+                    <View style={{ alignItems: 'center' }}>
+                      <IconButton
+                        icon="minus-circle-outline"
+                        size={28}
+                        iconColor="#bdbdbd"
+                        disabled
+                      />
+                      <Text style={{ color: '#bdbdbd', fontSize: 12 }}>Bloqué</Text>
+                    </View>
+                  ) : (
                     <IconButton
                       icon="account-plus"
                       size={28}
                       iconColor="#4CAF50"
                       onPress={() => handleJoin(group.id)}
                       disabled={joining === group.id}
-                      style={{ backgroundColor: '#fff', borderRadius: 50, elevation: 2 }}
                     />
-                  </View>
-                )}
-              </TouchableOpacity>
+                  )}
+                </View>
+              </View>
             ))
           )}
         </View>
@@ -211,7 +209,7 @@ const GroupsScreen = () => {
       <FAB
         icon="plus"
         style={[styles.fab, { backgroundColor: '#4CAF50' }]}
-        onPress={() => navigation.navigate( 'CreateGroup' )}
+        onPress={() => navigation.navigate('CreateGroup')}
         color="#fff"
       />
     </View>
@@ -254,23 +252,31 @@ const styles = StyleSheet.create({
   groupContainer: {
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 16,
     marginBottom: 12,
     elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  groupInactive: {
+    backgroundColor: '#f9f9f9',
+  },
+  groupContent: {
+    flex: 1,
+    padding: 16,
+  },
+  groupContentInactive: {
+    backgroundColor: 'rgba(0,0,0,0.03)',
   },
   groupInfo: {
     flex: 1,
-    marginRight: 8,
   },
   groupName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 2,
     color: '#222',
-    paddingHorizontal: 8,
   },
   accessText: {
     color: '#bdbdbd',
@@ -281,7 +287,6 @@ const styles = StyleSheet.create({
   groupDescription: {
     fontSize: 16,
     color: '#666',
-    paddingHorizontal: 8,
   },
   empty: {
     textAlign: 'center',
@@ -314,8 +319,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     textDecorationLine: 'underline',
     fontWeight: 'bold',
-    alignSelf: 'flex-start',
+  },
+  verticalSeparator: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#4CAF50',
+  },
+  buttonContainer: {
+    padding: 16,
+    height: '100%',
+    backgroundColor: '#fff',
   },
 });
 
-export default GroupsScreen; 
+export default GroupsScreen;
