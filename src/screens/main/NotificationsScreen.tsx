@@ -8,12 +8,15 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../types/navigation.types';
 import config from 'config/config';
+import { sendTestNotification, sendFirebaseTestNotification, logFCMTokenForTesting, sendDelayedFirebaseTest } from '../../services/notificationService';
 
 const NotificationsScreen = () => {
   const theme = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const { notifications, loading, error } = useSelector((state: RootState) => state.notifications);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [testLoading, setTestLoading] = React.useState(false);
+  const [firebaseLoading, setFirebaseLoading] = React.useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
@@ -34,6 +37,50 @@ const NotificationsScreen = () => {
   const handleMarkAllAsRead = () => {
     dispatch(markAllNotificationsAsRead());
     // TODO: Optionnel: call API to mark all as read
+  };
+
+  const handleTestNotification = async () => {
+    setTestLoading(true);
+    try {
+      await sendTestNotification();
+      console.log('Test notification sent successfully');
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  const handleFirebaseTestNotification = async () => {
+    setFirebaseLoading(true);
+    try {
+      await sendFirebaseTestNotification();
+      console.log('Firebase test notification sent successfully');
+    } catch (error) {
+      console.error('Error sending Firebase test notification:', error);
+    } finally {
+      setFirebaseLoading(false);
+    }
+  };
+
+  const handleDelayedFirebaseTest = async () => {
+    setFirebaseLoading(true);
+    try {
+      await sendDelayedFirebaseTest();
+      console.log('Delayed Firebase test notification sent successfully');
+    } catch (error) {
+      console.error('Error sending delayed Firebase test notification:', error);
+    } finally {
+      setFirebaseLoading(false);
+    }
+  };
+
+  const handleLogFCMToken = async () => {
+    try {
+      await logFCMTokenForTesting();
+    } catch (error) {
+      console.error('Error logging FCM token:', error);
+    }
   };
 
   const renderItem = ({ item }: any) => (
@@ -119,6 +166,49 @@ const NotificationsScreen = () => {
           contentContainerStyle={{ paddingBottom: 32 }}
         />
       )}
+      
+      {/* Boutons de test sous les notifications */}
+      <View style={styles.testButtonsContainer}>
+        <Text style={styles.testSectionTitle}>Tests de notifications</Text>
+        <Button
+          mode="outlined"
+          onPress={handleTestNotification}
+          loading={testLoading}
+          disabled={testLoading}
+          style={styles.testButton}
+          labelStyle={{ color: '#4CAF50' }}
+        >
+          Test Expo
+        </Button>
+        <Button
+          mode="outlined"
+          onPress={handleFirebaseTestNotification}
+          loading={firebaseLoading}
+          disabled={firebaseLoading}
+          style={styles.testButton}
+          labelStyle={{ color: '#FF9800' }}
+        >
+          Firebase Test
+        </Button>
+        <Button
+          mode="outlined"
+          onPress={handleDelayedFirebaseTest}
+          loading={firebaseLoading}
+          disabled={firebaseLoading}
+          style={styles.testButton}
+          labelStyle={{ color: '#FF9800' }}
+        >
+          Test Arrière-plan
+        </Button>
+        <Button
+          mode="outlined"
+          onPress={handleLogFCMToken}
+          style={styles.testButton}
+          labelStyle={{ color: '#2196F3' }}
+        >
+          Log FCM Token
+        </Button>
+      </View>
     </View>
   );
 };
@@ -189,6 +279,26 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
     paddingHorizontal: 8,
+  },
+  headerButtons: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    width: '100%',
+  },
+  testButtonsContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  testSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  testButton: {
+    marginBottom: 8,
   },
 });
 

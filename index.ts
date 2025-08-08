@@ -1,3 +1,4 @@
+import './firebase-messaging';
 import { registerRootComponent } from 'expo';
 
 import App from './App';

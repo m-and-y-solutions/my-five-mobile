@@ -17,8 +17,22 @@
         "foregroundImage": "./assets/my-five-icon-green.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [],
-      "allowBackup": true
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.VIBRATE"
+      ],
+      "allowBackup": true,
+      "notification": {
+        "icon": "./assets/my-five-icon-green.png",
+        "color": "#4CAF50",
+        "androidMode": "default",
+        "androidCollapsedTitle": "Nouvelle notification",
+        "androidChannelId": "my-five-notifications",
+        "androidChannelName": "MyFive Notifications",
+        "androidChannelDescription": "Notifications de l'application MyFive",
+        "androidChannelImportance": "high"
+      }
     },
     "extra": {
       "eas": {
@@ -33,8 +47,9 @@
     ],
     "owner": "my-five",
     "ios": {
+      "bundleIdentifier": "com.mysolution.myfive",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Nous avons besoin d’accéder à votre photothèque pour vous permettre de sélectionner une image de profil que vous pouvez utiliser dans votre compte utilisateur."
+        "NSPhotoLibraryUsageDescription": "Nous avons besoin d'accéder à votre photothèque pour vous permettre de sélectionner une image de profil que vous pouvez utiliser dans votre compte utilisateur."
       }
     }
   }

@@ -50,6 +50,7 @@ const CreateMatchScreen = () => {
   const [isFieldSelectionEnabled, setIsFieldSelectionEnabled] = useState(false);
   const [title, setTitle] = useState('');
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
   const userCountry = useSelector((state: RootState) => state.auth.user?.country || 'Belgique');
   const communesOrCities = userCountry === 'Belgique' ? COMMUNES_BY_COUNTRY.Belgique : COMMUNES_BY_COUNTRY.Tunisie;
   const cityLabel = userCountry === 'Belgique' ? 'Commune' : 'Ville';
@@ -198,6 +199,7 @@ const CreateMatchScreen = () => {
 
   const handleCreate = async () => {
     if (validateForm()) {
+      setIsCreating(true);
       try {
         const selectedFieldData = fields.find(f => f.id === selectedField);
         const timeZone = 'Europe/Brussels';
@@ -224,10 +226,12 @@ const CreateMatchScreen = () => {
         if (matchVisibility === 'group') {
           dispatch(fetchGroups());
         }
-        await dispatch(fetchAllMatches({}));
+        await dispatch(fetchAllMatches({status: "upcoming"}));
         navigation.goBack();
       } catch (error: any) {
         console.error('Error creating match:', error);
+      } finally {
+        setIsCreating(false);
       }
     }
   };
@@ -688,6 +692,8 @@ const CreateMatchScreen = () => {
                 style={styles.button}
                 contentStyle={styles.buttonContent}
                 labelStyle={styles.buttonLabel}
+                loading={isCreating}
+                disabled={isCreating}
               >
                 Créer le match
               </Button>
