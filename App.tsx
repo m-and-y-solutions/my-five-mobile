@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Provider } from "react-redux";
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, LinkingOptions } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
 import Navigation from './src/navigation';
@@ -57,6 +57,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 }
 
 export default function App() {
+  const linking: LinkingOptions<any> = {
+    prefixes: ['myfive://'],
+    config: {
+      screens: {
+        Main: {
+          screens: {
+            Matches: 'matches',
+          },
+        },
+        MatchDetails: 'match/:matchId',
+      },
+    },
+  };
   // Configurer les notifications
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -112,7 +125,7 @@ export default function App() {
       <Provider store={store}>
         <SafeAreaProvider>
           <PaperProvider theme={LightTheme}>
-            <NavigationContainer>
+            <NavigationContainer linking={linking}>
               <Navigation />
             </NavigationContainer>
           </PaperProvider>

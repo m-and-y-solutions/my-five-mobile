@@ -33,7 +33,7 @@ export const CITIES: City[] = [
   export const COMMUNES_BY_COUNTRY: Record<string, string[]> = {
     Belgique: [
       'Anderlecht', 'Auderghem', 'Berchem-Sainte-Agathe', 'Bruxelles', 'Etterbeek',
-      'Evere', 'Forest', 'Ganshoren', 'Ixelles', 'Jette', 'Koekelberg', 'Molenbeek-Saint-Jean',
+      'Evere', 'Forest', 'Ganshoren', 'Ixelles', 'Jette', 'Koekelberg','Laeken', 'Molenbeek-Saint-Jean',
       'Saint-Gilles', 'Saint-Josse-ten-Noode', 'Schaerbeek', 'Uccle', 'Watermael-Boitsfort',
       'Woluwe-Saint-Lambert', 'Woluwe-Saint-Pierre'
     ],

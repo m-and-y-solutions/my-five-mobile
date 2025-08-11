@@ -2,6 +2,7 @@
   "expo": {
     "name": "my-five",
     "slug": "reservmatch-mobile",
+    "scheme": "myfive",
     "version": "1.1.0",
     "icon": "./assets/my-five-icon-green.png",
     "splash": {
@@ -18,7 +19,16 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [],
-      "allowBackup": true
+      "allowBackup": true,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": {
+            "scheme": "myfive"
+          },
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "extra": {
       "eas": {

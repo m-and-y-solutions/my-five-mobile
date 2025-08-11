@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Share,
+  Linking,
 } from "react-native";
 import {
   Text,
@@ -91,6 +93,7 @@ const MatchDetailsScreen = () => {
   const [selectedPlayerName, setSelectedPlayerName] = useState("");
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false); // 🚀 NOUVEAU : État séparé pour le partage
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const theme = useTheme();
 
@@ -335,6 +338,158 @@ const MatchDetailsScreen = () => {
     }
   };
 
+  // Partage du match
+  const formatMatchDateTimeForShare = () => {
+    try {
+      const dateObj = new Date(selectedMatch!.date);
+      const datePart = dateObj.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      return `${datePart} à ${selectedMatch!.time}`;
+    } catch {
+      return `${selectedMatch!.date} ${selectedMatch!.time}`;
+    }
+  };
+
+  // 🚀 MESSAGE DE PARTAGE AMÉLIORÉ avec plus d'informations
+  const buildMatchShareMessage = () => {
+    const fieldName = selectedMatch?.field?.name || "Terrain non spécifié";
+    const location = [selectedMatch?.city, selectedMatch?.state, selectedMatch?.country]
+      .filter(Boolean)
+      .join(", ");
+    const priceLabel = selectedMatch?.price
+      ? `${selectedMatch?.price} ${selectedMatch?.currency}`
+      : "Gratuit";
+    const typeLabel =
+      selectedMatch?.type === "friendly"
+        ? "Match amical"
+        : selectedMatch?.type === "competitive"
+        ? "Match compétitif"
+        : selectedMatch?.type === "tournament"
+        ? "Tournoi"
+        : selectedMatch?.type || "Match";
+
+    // Calculer le nombre de places disponibles
+    const totalPlayers = (selectedMatch?.team1?.players?.length || 0) + (selectedMatch?.team2?.players?.length || 0);
+    const availableSpots = selectedMatch?.maxPlayers ? selectedMatch.maxPlayers - totalPlayers : 0;
+    const spotsText = availableSpots > 0 ? `${availableSpots} places disponibles` : "Complet";
+
+    let message = `⚽ ${selectedMatch?.title}\n\n`;
+    message += `🕒 ${formatMatchDateTimeForShare()}\n`;
+    message += `🏟️ ${fieldName}\n`;
+    if (location) message += `📍 ${location}\n`;
+    if (selectedMatch?.field?.address) message += `📌 ${selectedMatch?.field?.address}\n`;
+    message += `👥 ${selectedMatch?.maxPlayers} joueurs max (${spotsText})\n`;
+    message += `💰 ${priceLabel}\n`;
+    message += `🧭 ${typeLabel}\n`;
+    
+    // Ajouter les équipes si elles existent
+    if (selectedMatch?.team1?.name && selectedMatch?.team2?.name) {
+      message += `\n🆚 ${selectedMatch?.team1?.name} vs ${selectedMatch?.team2?.name}\n`;
+    }
+    
+    // Ajouter le créateur si disponible
+    if (selectedMatch?.creator) {
+      const creatorName = `${selectedMatch.creator.firstName} ${selectedMatch.creator.lastName}`;
+      message += `\n👤 Organisé par: ${creatorName}\n`;
+    }
+    
+    message += `\n🎯 Rejoignez ce match passionnant sur My Five ! 🚀`;
+    return message;
+  };
+
+  // 🚀 FONCTION UTILITAIRE : Obtenir les liens vers les stores
+  const getStoreLinks = () => {
+    const packageName = "com.mysolution.myfive"; // Package name depuis app.json
+    const appName = "my-five"; // Nom de l'app depuis app.json
+    
+    return {
+      playStore: `https://play.google.com/store/apps/details?id=${packageName}`,
+      appStore: `https://apps.apple.com/app/${appName}/id123456789`, // ID à remplacer par le vrai ID
+      // Note: Pour iOS, il faut l'App Store ID réel qui est attribué lors de la soumission
+    };
+  };
+
+  // 🚀 FONCTION FINALE : Partage intelligent avec gestion complète des stores
+  const handleShareWithDeepLinkCheck = async () => {
+    console.log("🚀 handleShareWithDeepLinkCheck appelé", new Date().toISOString());
+    
+    if (!selectedMatch) return;
+    
+    // 🚀 PRÉVENTION : Éviter les appels multiples
+    if (shareLoading) {
+      console.log("🚀 Partage déjà en cours, ignoré");
+      return;
+    }
+    
+    // 🚀 VÉRIFICATION : S'assurer que l'API Share est disponible
+    if (!Share || typeof Share.share !== 'function') {
+      console.error("🚀 API Share non disponible");
+      Alert.alert("Erreur", "Fonction de partage non disponible sur cet appareil.");
+      return;
+    }
+    
+    setShareLoading(true);
+    console.log("🚀 État de partage activé");
+    
+    try {
+      const message = buildMatchShareMessage();
+      const appUrl = `myfive://match/${selectedMatch.id}`;
+      const storeLinks = getStoreLinks();
+      
+      // Vérifier si l'app peut ouvrir le deep link
+      const canOpenApp = await Linking.canOpenURL(appUrl);
+      
+      if (canOpenApp) {
+        // L'app est installée, partager avec le deep link
+        const shareMessage = `${message}\n\n🔗 Lien direct: ${appUrl}\n\n📱 Cliquez sur le lien pour ouvrir dans l'app !`;
+        
+        await Share.share({
+          title: `Partager: ${selectedMatch.title}`,
+          message: shareMessage,
+          url: appUrl,
+        });
+        
+        console.log("✅ Match partagé avec deep link (app installée)");
+      } else {
+        // L'app n'est pas installée, partager avec liens vers les stores
+        const storeMessage = `${message}\n\n📱 Téléchargez My Five pour rejoindre ce match !\n\n🔗 Play Store: ${storeLinks.playStore}\n🔗 App Store: ${storeLinks.appStore}`;
+        
+        await Share.share({
+          title: `Partager: ${selectedMatch.title}`,
+          message: storeMessage,
+        });
+        
+        console.log("✅ Match partagé avec liens vers les stores (app non installée)");
+      }
+      
+    } catch (e) {
+      console.error("Erreur lors du partage:", e);
+      
+      // Fallback final: partage simple avec liens vers les stores
+      try {
+        const storeLinks = getStoreLinks();
+        const simpleMessage = `${buildMatchShareMessage()}\n\n📱 Téléchargez My Five sur le Play Store/App Store\n\n🔗 Play Store: ${storeLinks.playStore}\n🔗 App Store: ${storeLinks.appStore}`;
+        
+        await Share.share({
+          title: `Partager: ${selectedMatch.title}`,
+          message: simpleMessage,
+        });
+        
+        console.log("✅ Match partagé en mode simple avec liens stores");
+        
+      } catch (fallbackError) {
+        console.error("Erreur lors du partage fallback:", fallbackError);
+        Alert.alert("Erreur", "Impossible de partager le match. Veuillez réessayer.");
+      }
+    }finally {
+      setShareLoading(false);
+    }
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.centerContainer}>
@@ -430,12 +585,11 @@ const MatchDetailsScreen = () => {
               {selectedMatch?.visibility === "public" ? "Publique" : selectedMatch?.visibility === "private" ? "Privé":  "Groupe"}
             </Chip>
             <IconButton
-              icon="share-variant"
+              icon={shareLoading ? "loading" : "share-variant"}
               size={20}
-              iconColor="#4CAF50"
-              onPress={() => {
-                // Handle share functionality
-              }}
+              iconColor={shareLoading ? "#CCCCCC" : "#4CAF50"}
+              onPress={handleShareWithDeepLinkCheck} // 🚀 Utilise la fonction la plus intelligente
+              disabled={shareLoading} // 🚀 PRÉVENTION : Désactiver pendant le partage
             />
           </View>
           <View style={styles.headerActions}>
