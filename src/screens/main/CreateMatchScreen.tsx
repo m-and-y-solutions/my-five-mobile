@@ -15,6 +15,7 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { fetchGroups } from '../../store/slices/groupsSlice';
+import { sendDelayedFirebaseTest } from 'services/notificationService';
 
 interface FieldsByCity {
   [key: string]: Field[];
@@ -55,6 +56,8 @@ const CreateMatchScreen = () => {
   const communesOrCities = userCountry === 'Belgique' ? COMMUNES_BY_COUNTRY.Belgique : COMMUNES_BY_COUNTRY.Tunisie;
   const cityLabel = userCountry === 'Belgique' ? 'Commune' : 'Ville';
   const [showMaxPlayersModal, setShowMaxPlayersModal] = useState(false);
+  const [firebaseLoading, setFirebaseLoading] = React.useState(false);
+
 
   const isFieldAvailable = (field: Field) => {
     if (!field.isAvailable) return false;
@@ -225,6 +228,7 @@ const CreateMatchScreen = () => {
         }));
         if (matchVisibility === 'group') {
           dispatch(fetchGroups());
+          handleDelayedFirebaseTest();
         }
         await dispatch(fetchAllMatches({status: "upcoming"}));
         navigation.goBack();
@@ -233,6 +237,18 @@ const CreateMatchScreen = () => {
       } finally {
         setIsCreating(false);
       }
+    }
+  };
+  
+  const handleDelayedFirebaseTest = async () => {
+    setFirebaseLoading(true);
+    try {
+      await sendDelayedFirebaseTest();
+      console.log('Delayed Firebase test notification sent successfully');
+    } catch (error) {
+      console.error('Error sending delayed Firebase test notification:', error);
+    } finally {
+      setFirebaseLoading(false);
     }
   };
 
