@@ -5,7 +5,7 @@ import { CommonActions } from '@react-navigation/native';
 import { LoginCredentials, RegisterData } from '../../types/auth.types';
 import api from 'services/api';
 import config from 'config/config';
-import { registerForPushNotificationsAsync } from 'utils/notifications';
+// import { registerForPushNotificationsAsync } from 'utils/notifications';
 
 export const restoreAuth = createAsyncThunk(
   'auth/restore',
@@ -53,10 +53,11 @@ export const login = createAsyncThunk(
     if (response.success && response.data?.accessToken && response.data?.refreshToken) {
       if (response.data.user) {
         await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
-         const token = await registerForPushNotificationsAsync();
-        if (token) {
-          await api.post('/users/push-token', { token });
-        }
+        // to do restore when notif fixed
+        //  const token = await registerForPushNotificationsAsync();
+        // if (token) {
+        //   await api.post('/users/push-token', { token });
+        // }
       }
     } else {
       console.error('Login response missing tokens:', response);

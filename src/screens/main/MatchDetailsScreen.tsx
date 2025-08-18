@@ -584,13 +584,13 @@ const MatchDetailsScreen = () => {
             >
               {selectedMatch?.visibility === "public" ? "Publique" : selectedMatch?.visibility === "private" ? "Privé":  "Groupe"}
             </Chip>
-            <IconButton
+            {/* <IconButton
               icon={shareLoading ? "loading" : "share-variant"}
               size={20}
               iconColor={shareLoading ? "#CCCCCC" : "#4CAF50"}
               onPress={handleShareWithDeepLinkCheck} // 🚀 Utilise la fonction la plus intelligente
               disabled={shareLoading} // 🚀 PRÉVENTION : Désactiver pendant le partage
-            />
+            /> */}
           </View>
           <View style={styles.headerActions}>
             {isCreator && selectedMatch?.status !== "completed" && selectedMatch?.status !== "cancelled" && (

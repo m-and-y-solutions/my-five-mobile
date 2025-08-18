@@ -13,7 +13,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addNotification } from 'store/slices/notificationSlice';
 import config from 'config/config';
 import * as Notifications from 'expo-notifications';
-import { registerForPushNotificationsAsync } from './src/utils/notifications';
+// import { registerForPushNotificationsAsync } from './src/utils/notifications';
 import api from './src/services/api';
 
 // Ignore specific warnings
@@ -81,32 +81,32 @@ export default function App() {
     }),
   });
 
-  // Demander les permissions
-  const requestPermissions = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission refusée pour les notifications');
-    }
-  };
+  // to do restore when notif fixed Demander les permissions
+  // const requestPermissions = async () => {
+  //   const { status } = await Notifications.requestPermissionsAsync();
+  //   if (status !== 'granted') {
+  //     alert('Permission refusée pour les notifications');
+  //   }
+  // };
 
-  React.useEffect(() => {
-    const initializeNotifications = async () => {
-      await requestPermissions();
+  // React.useEffect(() => {
+  //   const initializeNotifications = async () => {
+  //     await requestPermissions();
       
-      // Enregistrer le token push
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        try {
-          await api.post('/users/push-token', { token });
-          console.log('[App] Push token enregistré:', token);
-        } catch (error) {
-          console.error('[App] Erreur lors de l\'enregistrement du token:', error);
-        }
-      }
-    };
+  //     // Enregistrer le token push
+  //     const token = await registerForPushNotificationsAsync();
+  //     if (token) {
+  //       try {
+  //         await api.post('/users/push-token', { token });
+  //         console.log('[App] Push token enregistré:', token);
+  //       } catch (error) {
+  //         console.error('[App] Erreur lors de l\'enregistrement du token:', error);
+  //       }
+  //     }
+  //   };
     
-    initializeNotifications();
-  }, []);
+  //   initializeNotifications();
+  // }, []);
 
   React.useEffect(() => {
     const testAsyncStorage = async () => {
